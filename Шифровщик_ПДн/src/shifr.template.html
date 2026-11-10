@@ -1,0 +1,935 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Шифровщик ПДн</title>
+<!--
+  Шифровщик ПДн — локальное обезличивание и восстановление персональных данных работников.
+  Работает полностью офлайн: файл открывается в браузере с рабочего стола, данные никуда не передаются.
+  Встроенные библиотеки: SheetJS Community Edition 0.18.5 (Apache-2.0), JSZip 3.10.1 (MIT).
+-->
+<style>
+:root{
+  --bg:#f5f6f8; --panel:#ffffff; --text:#1d2330; --muted:#5d6675; --line:#d9dde4;
+  --accent:#1f5fae; --accent-text:#ffffff; --ok:#1d7a46; --warn:#a15c00; --err:#b3261e;
+  --soft:#eef2f8; --code:#f0f2f5;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#15181d; --panel:#1e232a; --text:#e6e9ee; --muted:#9aa3b2; --line:#343b46;
+    --accent:#5b9bf0; --accent-text:#0d1420; --ok:#5ccf8a; --warn:#e8a64a; --err:#f2857c;
+    --soft:#242b35; --code:#262c35;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#15181d; --panel:#1e232a; --text:#e6e9ee; --muted:#9aa3b2; --line:#343b46;
+  --accent:#5b9bf0; --accent-text:#0d1420; --ok:#5ccf8a; --warn:#e8a64a; --err:#f2857c;
+  --soft:#242b35; --code:#262c35;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 "Segoe UI",Roboto,Arial,sans-serif}
+header{background:var(--panel);border-bottom:1px solid var(--line);padding:12px 16px;display:flex;flex-wrap:wrap;gap:8px 24px;align-items:center}
+header h1{font-size:18px;margin:0}
+#keyStatus{color:var(--muted)}
+#keyStatus b{color:var(--text)}
+.offline{font-size:12px;color:var(--ok);border:1px solid var(--ok);border-radius:4px;padding:1px 6px}
+nav{display:flex;flex-wrap:wrap;gap:4px;padding:8px 16px 0;max-width:1200px;margin:0 auto}
+nav button{border:1px solid var(--line);border-bottom:none;background:var(--soft);color:var(--text);padding:8px 14px;border-radius:6px 6px 0 0;cursor:pointer;font:inherit}
+nav button.active{background:var(--panel);font-weight:600}
+main{max-width:1200px;margin:0 auto;padding:0 16px 40px}
+section.tab{display:none;background:var(--panel);border:1px solid var(--line);border-radius:0 6px 6px 6px;padding:16px}
+section.tab.active{display:block}
+h2{font-size:16px;margin:0 0 8px}
+h3{font-size:14px;margin:16px 0 6px}
+p{margin:6px 0}
+.muted{color:var(--muted)}
+.row{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;margin:8px 0}
+label{display:inline-flex;gap:6px;align-items:center}
+input[type=text],input[type=password],input[type=number],select,textarea{font:inherit;color:var(--text);background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:5px 8px}
+textarea{width:100%;min-height:140px;resize:vertical}
+button.btn{font:inherit;border:1px solid var(--accent);background:var(--accent);color:var(--accent-text);border-radius:4px;padding:6px 14px;cursor:pointer}
+button.btn.sec{background:transparent;color:var(--accent)}
+button.btn:disabled{opacity:.5;cursor:default}
+.box{border:1px solid var(--line);border-radius:6px;padding:12px;margin:12px 0;background:var(--panel)}
+.step{font-weight:600;color:var(--accent)}
+.tablewrap{overflow-x:auto;max-width:100%;border:1px solid var(--line);border-radius:4px}
+table{border-collapse:collapse;font-size:13px}
+th,td{border-bottom:1px solid var(--line);padding:4px 8px;text-align:left;vertical-align:top;white-space:nowrap}
+th{background:var(--soft)}
+td.sample{color:var(--muted);max-width:260px;overflow:hidden;text-overflow:ellipsis}
+.report{white-space:pre-wrap;background:var(--code);border-radius:4px;padding:10px;font-family:Consolas,monospace;font-size:12.5px;margin-top:8px}
+.ok{color:var(--ok)} .warn{color:var(--warn)} .err{color:var(--err)}
+code{background:var(--code);padding:1px 4px;border-radius:3px}
+ol,ul{margin:6px 0;padding-left:22px}
+li{margin:3px 0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:760px){.grid2{grid-template-columns:1fr}}
+.prompt{background:var(--code);border-radius:4px;padding:10px;font-size:13px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Шифровщик ПДн</h1>
+  <span class="offline">работает офлайн · данные не покидают компьютер</span>
+  <span id="keyStatus"></span>
+</header>
+
+<nav id="tabs">
+  <button data-tab="t-table" class="active">1. Обезличить таблицу</button>
+  <button data-tab="t-doc">2. Обезличить документ / текст</button>
+  <button data-tab="t-restore">3. Восстановить ФИО</button>
+  <button data-tab="t-key">Ключ</button>
+  <button data-tab="t-help">Инструкция</button>
+</nav>
+
+<main>
+<!-- ================= 1. ТАБЛИЦА ================= -->
+<section class="tab active" id="t-table">
+  <h2>Обезличивание таблицы (шахматка, списки, графики)</h2>
+  <p class="muted">ФИО заменяется кодом вида <code>РБ-0001</code>. Соответствие «код — ФИО» сохраняется только в ключе на вашем компьютере.</p>
+
+  <div class="box">
+    <div class="row"><span class="step">Шаг 1.</span> Файл Excel (.xlsx, .xls, .csv):
+      <input type="file" id="tblFile" accept=".xlsx,.xlsm,.xls,.csv,.ods">
+    </div>
+    <div class="row" id="tblSheetRow" style="display:none">
+      <label>Лист: <select id="tblSheet"></select></label>
+      <label>Строка заголовков: <input type="number" id="tblHeader" min="1" value="1" style="width:70px"></label>
+      <label><input type="checkbox" id="tblMerges" checked> Раскрыть объединённые ячейки</label>
+      <button class="btn sec" id="tblReload">Обновить</button>
+    </div>
+  </div>
+
+  <div class="box" id="tblColsBox" style="display:none">
+    <div class="row"><span class="step">Шаг 2.</span> Действие для каждого столбца (предзаполнено по названиям — проверьте)</div>
+    <div class="tablewrap"><table id="tblCols"></table></div>
+    <div class="row">
+      <label><input type="checkbox" id="tblScanText" checked> Искать ФИО и СНИЛС/телефоны внутри оставляемых столбцов (примечания, «руководитель» и т.п.)</label>
+    </div>
+  </div>
+
+  <div class="box" id="tblRunBox" style="display:none">
+    <div class="row"><span class="step">Шаг 3.</span>
+      <button class="btn" id="tblRun">Обезличить и скачать</button>
+      <span class="muted">Результат: файл «…_обезличено.xlsx». Затем сохраните ключ (вкладка «Ключ»).</span>
+    </div>
+    <div class="report" id="tblReport" style="display:none"></div>
+  </div>
+</section>
+
+<!-- ================= 2. ДОКУМЕНТ ================= -->
+<section class="tab" id="t-doc">
+  <h2>Обезличивание документа или текста (приказы, служебки, акты, протоколы)</h2>
+  <p class="muted">Ищутся работники из ключа в формах: «Фамилия Имя Отчество», «Фамилия И.О.», «И.О. Фамилия», «Фамилия Имя», включая падежные окончания. Форматирование .docx/.xlsx/.pptx сохраняется.</p>
+
+  <div class="box">
+    <h3>Что ещё маскировать</h3>
+    <div class="row">
+      <label><input type="checkbox" id="pSnils" checked> СНИЛС</label>
+      <label><input type="checkbox" id="pPhone" checked> Телефоны</label>
+      <label><input type="checkbox" id="pEmail" checked> E-mail</label>
+      <label><input type="checkbox" id="pPass" checked> Паспорт (серия и номер)</label>
+      <label><input type="checkbox" id="pInn"> ИНН (12 цифр)</label>
+      <label><input type="checkbox" id="pTab"> Табельные номера из ключа (от 4 цифр)</label>
+      <label><input type="checkbox" id="pMeta" checked> Очистить автора/организацию в свойствах файла и рецензентов правок</label>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="box">
+      <h3>Файл</h3>
+      <p class="muted">.docx, .xlsx, .pptx, .txt, .csv. Старые .doc/.xls — пересохраните в новом формате.</p>
+      <div class="row"><input type="file" id="docFile" accept=".docx,.docm,.xlsx,.xlsm,.pptx,.txt,.csv"></div>
+      <div class="row"><button class="btn" id="docRun" disabled>Обезличить и скачать</button></div>
+    </div>
+    <div class="box">
+      <h3>Текст</h3>
+      <textarea id="docText" placeholder="Вставьте текст (например, проект приказа со списком работников)"></textarea>
+      <div class="row">
+        <button class="btn" id="docTextRun">Обезличить текст</button>
+        <button class="btn sec" id="docTextCopy">Копировать результат</button>
+      </div>
+    </div>
+  </div>
+  <div class="report" id="docReport" style="display:none"></div>
+</section>
+
+<!-- ================= 3. ВОССТАНОВЛЕНИЕ ================= -->
+<section class="tab" id="t-restore">
+  <h2>Восстановление ФИО в результатах</h2>
+  <p class="muted">Коды <code>РБ-0001</code> в файле или тексте, полученном от Claude, заменяются на ФИО по ключу. Форматирование .docx/.xlsx/.pptx сохраняется.</p>
+  <div class="box">
+    <div class="row">
+      <label>Формат подстановки:
+        <select id="rFormat">
+          <option value="short">Фамилия И.О.</option>
+          <option value="full">Фамилия Имя Отчество</option>
+          <option value="init">И.О. Фамилия</option>
+          <option value="shorttab">Фамилия И.О. (таб. № …)</option>
+          <option value="fulltab">Фамилия Имя Отчество (таб. № …)</option>
+        </select>
+      </label>
+    </div>
+  </div>
+  <div class="grid2">
+    <div class="box">
+      <h3>Файл</h3>
+      <div class="row"><input type="file" id="rFile" accept=".docx,.docm,.xlsx,.xlsm,.pptx,.txt,.csv,.md"></div>
+      <div class="row"><button class="btn" id="rRun" disabled>Восстановить и скачать</button></div>
+    </div>
+    <div class="box">
+      <h3>Текст</h3>
+      <textarea id="rText" placeholder="Вставьте ответ Claude с кодами РБ-…"></textarea>
+      <div class="row">
+        <button class="btn" id="rTextRun">Восстановить текст</button>
+        <button class="btn sec" id="rTextCopy">Копировать результат</button>
+      </div>
+    </div>
+  </div>
+  <div class="report" id="rReport" style="display:none"></div>
+  <p class="muted">Падеж не меняется: код подставляется в именительном падеже. В приказах проверьте согласование («работнику Иванов И.И.» → «работнику Иванову И.И.»).</p>
+</section>
+
+<!-- ================= КЛЮЧ ================= -->
+<section class="tab" id="t-key">
+  <h2>Ключ соответствия «код — работник»</h2>
+  <p class="muted">Ключ — единственное место, где хранятся ФИО. Храните его на рабочем компьютере / сетевом диске отдела. Не загружайте ключ в Claude и другие внешние сервисы.</p>
+  <div class="grid2">
+    <div class="box">
+      <h3>Открыть ключ</h3>
+      <div class="row"><input type="file" id="kFile" accept=".json"></div>
+      <div class="row"><label>Пароль: <input type="password" id="kOpenPw" autocomplete="off"></label>
+        <button class="btn" id="kOpen" disabled>Открыть</button></div>
+      <p class="muted">Открывайте один и тот же ключ при каждой работе — тогда у работника всегда один и тот же код.</p>
+    </div>
+    <div class="box">
+      <h3>Сохранить ключ</h3>
+      <div class="row"><label>Пароль: <input type="password" id="kPw1" autocomplete="new-password"></label></div>
+      <div class="row"><label>Повтор: <input type="password" id="kPw2" autocomplete="new-password"></label></div>
+      <div class="row">
+        <button class="btn" id="kSave">Сохранить ключ (.json)</button>
+        <button class="btn sec" id="kExport">Выгрузить ключ в Excel</button>
+      </div>
+      <p class="muted">С паролем ключ шифруется (AES-256-GCM). Пароль не восстанавливается — без него ключ не открыть. Выгрузка в Excel — без шифрования, только для внутреннего использования.</p>
+    </div>
+  </div>
+  <div class="box">
+    <h3>Добавить работника вручную</h3>
+    <div class="row">
+      <input type="text" id="kAddFio" placeholder="Фамилия Имя Отчество" style="min-width:280px">
+      <input type="text" id="kAddTab" placeholder="Таб. №" style="width:110px">
+      <button class="btn sec" id="kAdd">Добавить</button>
+    </div>
+  </div>
+  <div class="box">
+    <h3>Найти</h3>
+    <div class="row"><input type="text" id="kSearch" placeholder="Код, ФИО или таб. №" style="min-width:280px"></div>
+    <div class="tablewrap"><table id="kTable"></table></div>
+    <div class="row"><button class="btn sec" id="kClear">Очистить ключ в этом окне</button></div>
+  </div>
+  <div class="report" id="kReport" style="display:none"></div>
+</section>
+
+<!-- ================= ИНСТРУКЦИЯ ================= -->
+<section class="tab" id="t-help">
+  <h2>Порядок работы</h2>
+  <h3>Первый раз</h3>
+  <ol>
+    <li>Вкладка 1: выбрать шахматку, проверить действия по столбцам, нажать «Обезличить и скачать».</li>
+    <li>Вкладка «Ключ»: задать пароль, «Сохранить ключ». Файл ключа хранить у себя.</li>
+    <li>В Claude загружать только файл «…_обезличено.xlsx».</li>
+  </ol>
+  <h3>Последующая работа</h3>
+  <ol>
+    <li>Вкладка «Ключ»: открыть сохранённый ключ.</li>
+    <li>Новые/обновлённые таблицы — вкладка 1 (новые работники получат следующие коды, старые — прежние). Документы — вкладка 2.</li>
+    <li>Ответ Claude (таблица, приказ, выборка) — вкладка 3: коды заменяются на ФИО.</li>
+    <li>Если ключ дополнился — сохранить его заново.</li>
+  </ol>
+  <h3>Текст для Claude (вставить в начало запроса)</h3>
+  <div class="prompt" id="promptText">В данных работники обозначены кодами вида РБ-0001. Персональные данные удалены намеренно. Используй коды как идентификаторы работников: не изменяй, не склоняй, не сокращай и не объединяй их; в таблицах, списках и текстах приказов указывай работника только кодом в точном написании.</div>
+  <div class="row"><button class="btn sec" id="promptCopy">Копировать</button></div>
+
+  <h3>Рекомендации по столбцам</h3>
+  <ul>
+    <li><b>ФИО</b> (одним столбцом или Фамилия/Имя/Отчество) — «Код».</li>
+    <li><b>Табельный №</b> — «Таб. № → в ключ»: используется для однозначного сопоставления, в результат не попадает.</li>
+    <li><b>Дата рождения</b> — «Возраст» или «Год»; если для задачи не нужна — «Удалить».</li>
+    <li><b>СНИЛС, паспорт, адрес, телефон, e-mail, ИНН, сведения о здоровье</b> — «Удалить».</li>
+    <li><b>Должность, подразделение, профессия, класс условий труда, даты медосмотров/инструктажей/обучения</b> — «Оставить».</li>
+  </ul>
+  <h3>Ограничения</h3>
+  <ul>
+    <li>Обезличенные данные с ключом у оператора остаются персональными данными (152-ФЗ). Защита достигается тем, что получатель не имеет ключа.</li>
+    <li>Уникальное сочетание признаков (единственный работник в должности, редкая профессия + возраст) позволяет установить человека. Для таких выборок удаляйте лишние столбцы или укрупняйте значения.</li>
+    <li>В документах проверьте раздел «Возможные упоминания» в отчёте: фамилия без имени и инициалов автоматически не заменяется.</li>
+    <li>Не заменяются ФИО внутри картинок, сканов, PDF и подписей-изображений.</li>
+    <li>Ключ хранится только в этом окне до закрытия. Перед закрытием сохраните ключ.</li>
+  </ul>
+</section>
+</main>
+
+<script>/*__XLSX__*/</script>
+<script>/*__JSZIP__*/</script>
+<script>
+"use strict";
+/* ================== Общие ================== */
+const CODE_PREFIX = 'РБ-';
+const CODE_RE = /РБ-(\d{4,})(?!\d)/g;
+const L = '[A-Za-zА-Яа-яЁё]';
+const $ = id => document.getElementById(id);
+
+const Key = {
+  entries: [], next: 1, dirty: false,
+  byCode: new Map(), byTab: new Map(), byFio: new Map(),
+  reindex(){
+    this.byCode.clear(); this.byTab.clear(); this.byFio.clear();
+    for (const e of this.entries){
+      this.byCode.set(e.code, e);
+      if (e.tab) this.byTab.set(e.tab, e);
+      const n = normFio(e.fio);
+      if (!this.byFio.has(n)) this.byFio.set(n, []);
+      this.byFio.get(n).push(e);
+    }
+    invalidatePatterns();
+  },
+  // Возвращает [entry, isNew]
+  getOrCreate(fio, tab){
+    fio = cleanFio(fio); tab = cleanTab(tab);
+    if (tab && this.byTab.has(tab)){
+      const e = this.byTab.get(tab);
+      if (!e.fio && fio){ e.fio = fio; this.dirty = true; this.reindex(); }
+      return [e, false];
+    }
+    const list = this.byFio.get(normFio(fio)) || [];
+    if (!tab && list.length) return [list[0], false];
+    if (tab){
+      const free = list.find(e => !e.tab);
+      if (free){ free.tab = tab; this.dirty = true; this.reindex(); return [free, false]; }
+    }
+    const e = { code: CODE_PREFIX + String(this.next++).padStart(4,'0'), fio, tab: tab || '' };
+    this.entries.push(e); this.dirty = true; this.reindex();
+    return [e, true];
+  },
+  clear(){ this.entries = []; this.next = 1; this.dirty = false; this.reindex(); }
+};
+
+function cleanFio(s){ return String(s ?? '').replace(/\s+/g,' ').trim(); }
+function cleanTab(s){ return String(s ?? '').replace(/\s+/g,'').trim(); }
+function normFio(s){ return cleanFio(s).toLowerCase().replace(/ё/g,'е'); }
+function splitFio(fio){
+  const p = cleanFio(fio).split(' ').filter(Boolean);
+  return { fam: p[0] || '', im: p[1] || '', ot: p.slice(2).join(' ') };
+}
+function fmtPerson(e, fmt){
+  const {fam, im, ot} = splitFio(e.fio);
+  const ini = (im ? im[0].toUpperCase() + '.' : '') + (ot ? ot[0].toUpperCase() + '.' : '');
+  let s;
+  switch (fmt){
+    case 'full': case 'fulltab': s = e.fio; break;
+    case 'init': s = (ini ? ini + ' ' : '') + fam; break;
+    default: s = fam + (ini ? ' ' + ini : '');
+  }
+  if ((fmt === 'shorttab' || fmt === 'fulltab') && e.tab) s += ' (таб. № ' + e.tab + ')';
+  return s;
+}
+function updateStatus(){
+  const n = Key.entries.length;
+  $('keyStatus').innerHTML = n
+    ? `Ключ: <b>${n}</b> работн. · последний код ${esc(Key.entries[n-1].code)} · ${Key.dirty ? '<span class="warn">есть несохранённые изменения</span>' : '<span class="ok">сохранён</span>'}`
+    : 'Ключ: <b>пуст</b> — откройте сохранённый ключ или обезличьте шахматку';
+  renderKeyTable();
+}
+function esc(s){ return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function reEsc(s){ return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+function eqRe(s){ return reEsc(s).replace(/[её]/gi, '[ЕЁеё]'); }
+function download(blob, name){
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+}
+function baseName(n){ return n.replace(/\.[^.]+$/, ''); }
+function extOf(n){ const m = n.toLowerCase().match(/\.([^.]+)$/); return m ? m[1] : ''; }
+function report(id, html){ const el = $(id); el.style.display = 'block'; el.innerHTML = html; }
+async function readTextFile(file){
+  const buf = new Uint8Array(await file.arrayBuffer());
+  try { return new TextDecoder('utf-8', {fatal:true}).decode(buf).replace(/^﻿/, ''); }
+  catch(e){ return new TextDecoder('windows-1251').decode(buf); }
+}
+function copyText(t){
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).catch(()=>fallbackCopy(t));
+  else fallbackCopy(t);
+}
+function fallbackCopy(t){ const ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); }
+
+/* ================== Поиск ФИО в тексте ================== */
+let PATTERNS = null;
+function invalidatePatterns(){ PATTERNS = null; }
+function stemRe(w){
+  let s = w;
+  if (s.length >= 4 && /[аяоеёыийь]$/i.test(s)) s = s.slice(0, -1);
+  return eqRe(s) + L + '{0,3}';
+}
+function iniRe(w){ return eqRe(w[0]) + '\\.'; }
+function buildPatterns(){
+  const list = [];
+  for (const e of Key.entries){
+    const {fam, im, ot} = splitFio(e.fio);
+    if (!fam || fam.length < 2) continue;
+    const F = stemRe(fam), I = im ? stemRe(im) : null, O = ot ? stemRe(ot) : null;
+    const sp = '\\s+', isp = '\\s*';
+    const alts = [];
+    if (I && O){ alts.push(F+sp+I+sp+O, I+sp+O+sp+F, F+sp+iniRe(im)+isp+iniRe(ot), iniRe(im)+isp+iniRe(ot)+isp+F); }
+    if (I){ alts.push(F+sp+I, I+sp+F, F+sp+iniRe(im), iniRe(im)+isp+F); }
+    if (!alts.length) continue;
+    const re = new RegExp('(?<!' + L + ')(?:' + alts.join('|') + ')(?!' + L + ')', 'giu');
+    const famPrefix = normFio(fam).slice(0, Math.min(4, fam.length));
+    const famOnly = new RegExp('(?<!' + L + ')' + F + '(?!' + L + ')', 'giu');
+    list.push({ e, re, famPrefix, famOnly });
+  }
+  PATTERNS = list;
+}
+const PII = [
+  { id:'pSnils', name:'СНИЛС',   re:/(?<!\d)\d{3}[-\s]\d{3}[-\s]\d{3}[-\s]\d{2}(?!\d)/g, rep:'[СНИЛС]' },
+  { id:'pPhone', name:'Телефон', re:/(?<![\d\w])(?:\+7|8)[\s\-]?\(?\d{3}\)?[\s\-]?\d{3}[\s\-]?\d{2}[\s\-]?\d{2}(?!\d)/g, rep:'[ТЕЛЕФОН]' },
+  { id:'pEmail', name:'E-mail',  re:/[\w.+-]+@[\w-]+(?:\.[\w-]+)+/g, rep:'[E-MAIL]' },
+  { id:'pPass',  name:'Паспорт', re:/(?<!\d)\d{2}\s?\d{2}\s(?:№\s?)?\d{6}(?!\d)/g, rep:'[ПАСПОРТ]' },
+  { id:'pInn',   name:'ИНН',     re:/(?<!\d)\d{12}(?!\d)/g, rep:'[ИНН]' },
+];
+function piiOptions(force){
+  const o = {};
+  for (const p of PII) o[p.id] = force ? (p.id !== 'pInn') : $(p.id).checked;
+  o.pTab = force ? false : $('pTab').checked;
+  return o;
+}
+// Находит все замены в строке. stats: {persons:Map(code→n), pii:{}, residual:Map}
+function findAnonMatches(text, opts, stats){
+  if (!PATTERNS) buildPatterns();
+  const cand = [];
+  if (text.length < 2) return cand;
+  const low = text.toLowerCase().replace(/ё/g, 'е');
+  for (const p of PATTERNS){
+    if (!low.includes(p.famPrefix)) continue;
+    p.re.lastIndex = 0;
+    for (const m of text.matchAll(p.re)) cand.push({ start:m.index, end:m.index+m[0].length, repl:p.e.code, kind:'p', code:p.e.code });
+  }
+  for (const p of PII){
+    if (!opts[p.id]) continue;
+    for (const m of text.matchAll(p.re)) cand.push({ start:m.index, end:m.index+m[0].length, repl:p.rep, kind:p.name });
+  }
+  if (opts.pTab){
+    for (const e of Key.entries){
+      if (!e.tab || e.tab.length < 4 || !/^\d+$/.test(e.tab) || !text.includes(e.tab)) continue;
+      const re = new RegExp('(?<!\\d)' + e.tab + '(?!\\d)', 'g');
+      for (const m of text.matchAll(re)) cand.push({ start:m.index, end:m.index+m[0].length, repl:e.code, kind:'Таб. №' });
+    }
+  }
+  // тёзки: один и тот же фрагмент подходит нескольким работникам
+  const spanCodes = new Map();
+  for (const c of cand) if (c.kind === 'p'){ const k = c.start + ':' + c.end; if (!spanCodes.has(k)) spanCodes.set(k, new Set()); spanCodes.get(k).add(c.code); }
+  const res = pickNonOverlap(cand);
+  for (const m of res){
+    const set = m.kind === 'p' && spanCodes.get(m.start + ':' + m.end);
+    if (set && set.size > 1) stats.ambiguous.push({ frag:text.slice(m.start, m.end), codes:[...set], ctx:text.slice(Math.max(0, m.start - 30), m.end + 30).replace(/\s+/g, ' ') });
+    if (m.kind === 'p') stats.persons.set(m.code, (stats.persons.get(m.code) || 0) + 1);
+    else stats.pii[m.kind] = (stats.pii[m.kind] || 0) + 1;
+  }
+  return res;
+}
+function pickNonOverlap(cand){
+  cand.sort((a,b) => a.start - b.start || (b.end - b.start) - (a.end - a.start));
+  const out = []; let last = -1;
+  for (const c of cand){ if (c.start >= last){ out.push(c); last = c.end; } }
+  return out;
+}
+function applyMatches(text, ms){
+  if (!ms.length) return text;
+  let out = '', pos = 0;
+  for (const m of ms){ out += text.slice(pos, m.start) + m.repl; pos = m.end; }
+  return out + text.slice(pos);
+}
+// Остаточные упоминания фамилий (без имени/инициалов) — в итоговом тексте
+function scanResidual(text, stats){
+  if (!PATTERNS) buildPatterns();
+  const low = text.toLowerCase().replace(/ё/g, 'е');
+  for (const p of PATTERNS){
+    if (!low.includes(p.famPrefix)) continue;
+    p.famOnly.lastIndex = 0;
+    for (const m of text.matchAll(p.famOnly)){
+      const k = m[0];
+      const ctx = text.slice(Math.max(0, m.index - 30), m.index + k.length + 30).replace(/\s+/g, ' ');
+      if (!stats.residual.has(k)) stats.residual.set(k, { n:0, ctx });
+      stats.residual.get(k).n++;
+    }
+  }
+}
+function newStats(){ return { persons:new Map(), pii:{}, residual:new Map(), unknown:new Map(), restored:0, ambiguous:[] }; }
+
+/* ================== Восстановление ================== */
+function findRestoreMatches(text, fmt, stats){
+  const out = [];
+  CODE_RE.lastIndex = 0;
+  for (const m of text.matchAll(CODE_RE)){
+    const code = CODE_PREFIX + m[1];
+    const e = Key.byCode.get(code);
+    if (!e){ stats.unknown.set(code, (stats.unknown.get(code) || 0) + 1); continue; }
+    const repl = fmtPerson(e, fmt);
+    let end = m.index + m[0].length;
+    if (repl.endsWith('.') && text[end] === '.') end++; // «А.С. Петрову.» → без двойной точки
+    out.push({ start:m.index, end, repl });
+    stats.restored++;
+  }
+  return out;
+}
+
+/* ================== Office Open XML (docx/xlsx/pptx) ================== */
+const PARA = new Set(['p', 'si', 'is']);
+const OOXML_PARTS = /^(word\/(document|header\d*|footer\d*|footnotes|endnotes|comments\w*)|xl\/(sharedStrings|worksheets\/sheet\d+|comments\d*)|ppt\/(slides\/slide\d+|notesSlides\/notesSlide\d+|comments\/\w+))\.xml$/i;
+const W_NS = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+
+function processXml(xml, finder){
+  const doc = new DOMParser().parseFromString(xml, 'application/xml');
+  if (doc.getElementsByTagName('parsererror').length) return null;
+  const groups = new Map(); const order = [];
+  const all = doc.getElementsByTagName('*');
+  for (let i = 0; i < all.length; i++){
+    const el = all[i]; const ln = el.localName;
+    let virt = false, own = null;
+    if (ln === 't'){ /* текст */ }
+    else if (ln === 'v' && el.parentNode && el.parentNode.localName === 'c' && el.parentNode.getAttribute('t') === 'str'){ own = el.parentNode; }
+    else if ((ln === 'tab' || ln === 'br' || ln === 'cr') && el.namespaceURI === W_NS){ virt = true; }
+    else if (ln === 'br' && el.parentNode && el.parentNode.localName === 'p'){ virt = true; }
+    else continue;
+    let p = own || el.parentNode;
+    while (!own && p && p.nodeType === 1 && !PARA.has(p.localName)) p = p.parentNode;
+    if (!p || p.nodeType !== 1) continue;
+    if (!groups.has(p)){ groups.set(p, []); order.push(p); }
+    groups.get(p).push({ el, virt });
+  }
+  let changed = false;
+  for (const p of order){
+    const nodes = groups.get(p);
+    const texts = nodes.map(n => n.virt ? ' ' : n.el.textContent);
+    const full = texts.join('');
+    if (!full.trim()) continue;
+    const ms = finder(full);
+    if (!ms.length) continue;
+    changed = true;
+    let pos = 0, mi = 0, skip = -1;
+    nodes.forEach((n, idx) => {
+      const t = texts[idx], a = pos, b = pos + t.length;
+      let out = '', q = a;
+      while (q < b){
+        if (q < skip){ q = Math.min(skip, b); continue; }
+        if (mi < ms.length && ms[mi].start === q){ out += ms[mi].repl; skip = ms[mi].end; mi++; continue; }
+        let nx = b;
+        if (mi < ms.length && ms[mi].start < b) nx = Math.min(nx, ms[mi].start);
+        out += t.slice(q - a, nx - a); q = nx;
+      }
+      if (!n.virt && out !== t){
+        n.el.textContent = out;
+        if (/^\s|\s$/.test(out)) n.el.setAttributeNS('http://www.w3.org/XML/1998/namespace', 'xml:space', 'preserve');
+      }
+      pos = b;
+    });
+  }
+  if (!changed) return { xml, changed:false, text:collectText(order, groups) };
+  let s = new XMLSerializer().serializeToString(doc);
+  const decl = xml.match(/^<\?xml[^>]*\?>/);
+  if (decl && !s.startsWith('<?xml')) s = decl[0] + '\r\n' + s;
+  return { xml:s, changed:true, text:collectText(order, groups) };
+}
+function collectText(order, groups){
+  return order.map(p => groups.get(p).map(n => n.virt ? ' ' : n.el.textContent).join('')).join('\n');
+}
+function scrubMeta(name, xml){
+  if (name === 'docProps/core.xml'){
+    return xml.replace(/(<dc:creator[^>]*>)[\s\S]*?(<\/dc:creator>)/g, '$1$2')
+              .replace(/(<cp:lastModifiedBy[^>]*>)[\s\S]*?(<\/cp:lastModifiedBy>)/g, '$1$2');
+  }
+  if (name === 'docProps/app.xml'){
+    return xml.replace(/(<Company>)[\s\S]*?(<\/Company>)/g, '$1$2').replace(/(<Manager>)[\s\S]*?(<\/Manager>)/g, '$1$2');
+  }
+  if (/^(word|xl|ppt)\/.*\.xml$/.test(name)){
+    return xml.replace(/\bw:author="[^"]*"/g, 'w:author="Автор"').replace(/\bw:initials="[^"]*"/g, 'w:initials="А"');
+  }
+  return xml;
+}
+async function processOoxml(file, finder, {scrub=false, residualStats=null} = {}){
+  const zip = await JSZip.loadAsync(await file.arrayBuffer());
+  const names = Object.keys(zip.files);
+  let allText = '';
+  for (const name of names){
+    const f = zip.files[name];
+    if (f.dir) continue;
+    if (scrub && name === 'word/people.xml'){ zip.remove(name); continue; }
+    const isPart = OOXML_PARTS.test(name);
+    const isMeta = scrub && (/^docProps\/(core|app)\.xml$/.test(name) || /^(word|xl|ppt)\/.*\.xml$/.test(name));
+    if (!isPart && !isMeta) continue;
+    let xml = await f.async('string');
+    let changed = false;
+    if (isPart){
+      const r = processXml(xml, finder);
+      if (r){ allText += r.text + '\n'; if (r.changed){ xml = r.xml; changed = true; } }
+    }
+    if (scrub){ const s2 = scrubMeta(name, xml); if (s2 !== xml){ xml = s2; changed = true; } }
+    if (changed) zip.file(name, xml);
+  }
+  if (residualStats) scanResidual(allText, residualStats);
+  const mime = { docx:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                 xlsx:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                 pptx:'application/vnd.openxmlformats-officedocument.presentationml.presentation' }[extOf(file.name).slice(0,4)] || 'application/octet-stream';
+  return zip.generateAsync({ type:'blob', compression:'DEFLATE', mimeType:mime });
+}
+
+/* ================== Отчёты ================== */
+function anonReportHtml(stats, extra){
+  let h = extra || '';
+  const persons = [...stats.persons.values()].reduce((a,b)=>a+b, 0);
+  h += `<span class="ok">Заменено упоминаний работников: ${persons} (разных работников: ${stats.persons.size})</span>\n`;
+  const pii = Object.entries(stats.pii);
+  if (pii.length) h += 'Замаскировано: ' + pii.map(([k,v]) => `${k} — ${v}`).join('; ') + '\n';
+  if (stats.ambiguous.length){
+    h += `\n<span class="err">Неоднозначно (тёзки или совпадение «Фамилия И.О.»). Присвоен первый код — проверьте и при необходимости исправьте код в файле вручную:</span>\n`;
+    for (const a of stats.ambiguous) h += `  • «${esc(a.frag)}» — возможные коды: ${a.codes.map(c => esc(c) + ' ' + esc(Key.byCode.get(c).fio) + (Key.byCode.get(c).tab ? ' (таб. ' + esc(Key.byCode.get(c).tab) + ')' : '')).join('; ')}; «…${esc(a.ctx)}…»\n`;
+  }
+  if (stats.residual.size){
+    h += `\n<span class="warn">Возможные упоминания (фамилия без имени/инициалов — проверьте вручную перед загрузкой):</span>\n`;
+    for (const [k, v] of stats.residual) h += `  • ${esc(k)} — ${v.n} раз; «…${esc(v.ctx)}…»\n`;
+  } else if (Key.entries.length) {
+    h += 'Остаточных упоминаний фамилий из ключа не найдено.\n';
+  }
+  if (!Key.entries.length) h += `<span class="warn">Ключ пуст: ФИО не искались. Откройте ключ или обезличьте шахматку.</span>\n`;
+  h += '\nПеред загрузкой просмотрите файл: картинки, сканы и подписи-изображения не проверяются.';
+  return h;
+}
+function restoreReportHtml(stats){
+  let h = `<span class="ok">Восстановлено кодов: ${stats.restored}</span>\n`;
+  if (stats.unknown.size) h += `<span class="err">Коды отсутствуют в ключе (не заменены): ${[...stats.unknown.keys()].map(esc).join(', ')}</span>\nПроверьте, что открыт нужный ключ.\n`;
+  if (!Key.entries.length) h += `<span class="warn">Ключ пуст — откройте ключ на вкладке «Ключ».</span>\n`;
+  return h;
+}
+
+/* ================== 1. Таблица ================== */
+const ACTIONS = [
+  ['keep','Оставить'], ['fio','Код ← ФИО (полностью)'], ['fam','Код ← Фамилия'], ['im','Код ← Имя'], ['ot','Код ← Отчество'],
+  ['tab','Таб. № → в ключ (удалить)'], ['tabkeep','Таб. № → в ключ (оставить)'], ['age','Дата → возраст (лет)'], ['year','Дата → год'], ['drop','Удалить']
+];
+let TBL = { wb:null, name:'', rows:[], header:[], hdrIdx:0 };
+
+function guessAction(h){
+  const s = String(h || '').toLowerCase().replace(/ё/g,'е').trim();
+  if (!s) return 'keep';
+  if (/^фамилия$/.test(s)) return 'fam';
+  if (/^имя$/.test(s)) return 'im';
+  if (/^отчество$/.test(s)) return 'ot';
+  if (/ф\.?\s?и\.?\s?о|фамилия.*имя|^работник|^сотрудник|^ф\.?и\.?о/.test(s)) return 'fio';
+  if (/таб/.test(s)) return 'tab';
+  if (/рожд/.test(s)) return 'age';
+  if (/снилс|инн|паспорт|телефон|тел\.|моб|адрес|e-?mail|почт|пропис|регистрац|полис|сч[её]т|карт|диагноз|заболев|группа инвалид|инвалидн/.test(s)) return 'drop';
+  return 'keep';
+}
+function detectHeader(rows){
+  let best = 0, bestN = -1;
+  for (let i = 0; i < Math.min(rows.length, 25); i++){
+    const n = rows[i].filter(v => typeof v === 'string' && v.trim()).length;
+    if (n > bestN){ bestN = n; best = i; }
+  }
+  return best;
+}
+function sheetRows(ws, expandMerges){
+  if (expandMerges && ws['!merges']){
+    for (const m of ws['!merges']){
+      const tl = ws[XLSX.utils.encode_cell(m.s)];
+      if (!tl) continue;
+      for (let r = m.s.r; r <= m.e.r; r++) for (let c = m.s.c; c <= m.e.c; c++){
+        if (r === m.s.r && c === m.s.c) continue;
+        ws[XLSX.utils.encode_cell({r, c})] = { ...tl };
+      }
+    }
+  }
+  const rows = XLSX.utils.sheet_to_json(ws, { header:1, raw:true, defval:'', blankrows:true });
+  const r0 = ws['!ref'] ? XLSX.utils.decode_range(ws['!ref']).s.r : 0;
+  return Array.from({ length:r0 }, () => []).concat(rows);
+}
+function fmtVal(v){
+  if (v instanceof Date) return isNaN(v) ? '' : v.toLocaleDateString('ru-RU');
+  return String(v ?? '');
+}
+function readBook(){ return XLSX.read(TBL.src.data, { type:TBL.src.type, cellDates:true }); }
+async function tblLoad(){
+  const f = $('tblFile').files[0]; if (!f) return;
+  TBL.name = f.name;
+  if (extOf(f.name) === 'csv'){ TBL.src = { data: await readTextFile(f), type:'string' }; }
+  else { TBL.src = { data: new Uint8Array(await f.arrayBuffer()), type:'array' }; }
+  TBL.wb = readBook();
+  const sel = $('tblSheet'); sel.innerHTML = '';
+  TBL.wb.SheetNames.forEach((n, i) => sel.add(new Option(n, n)));
+  $('tblSheetRow').style.display = 'flex';
+  tblParse(true);
+}
+function tblParse(autoHeader){
+  // перечитываем лист из исходной книги, чтобы не накапливать раскрытие объединений
+  const ws = readBook().Sheets[$('tblSheet').value];
+  TBL.rows = sheetRows(ws, $('tblMerges').checked);
+  if (autoHeader) $('tblHeader').value = detectHeader(TBL.rows) + 1;
+  TBL.hdrIdx = Math.max(0, (parseInt($('tblHeader').value, 10) || 1) - 1);
+  const width = TBL.rows.reduce((m, r) => Math.max(m, r.length), 0);
+  const hdr = TBL.rows[TBL.hdrIdx] || [];
+  TBL.header = Array.from({ length:width }, (_, i) => cleanFio(fmtVal(hdr[i])) || ('Столбец ' + XLSX.utils.encode_col(i)));
+  const body = TBL.rows.slice(TBL.hdrIdx + 1);
+  let h = '<tr><th>Столбец</th><th>Заголовок</th><th>Действие</th><th>Примеры значений</th></tr>';
+  TBL.header.forEach((name, i) => {
+    const samples = body.map(r => fmtVal(r[i])).filter(Boolean).slice(0, 3).join(' | ');
+    const g = guessAction(name);
+    h += `<tr><td>${XLSX.utils.encode_col(i)}</td><td>${esc(name)}</td><td><select data-col="${i}">` +
+      ACTIONS.map(([v, t]) => `<option value="${v}"${v === g ? ' selected' : ''}>${t}</option>`).join('') +
+      `</select></td><td class="sample" title="${esc(samples)}">${esc(samples)}</td></tr>`;
+  });
+  $('tblCols').innerHTML = h;
+  $('tblColsBox').style.display = 'block';
+  $('tblRunBox').style.display = 'block';
+  $('tblReport').style.display = 'none';
+}
+function ageAt(d, now){
+  let a = now.getFullYear() - d.getFullYear();
+  const m = now.getMonth() - d.getMonth();
+  if (m < 0 || (m === 0 && now.getDate() < d.getDate())) a--;
+  return a;
+}
+function toDate(v){
+  if (v instanceof Date) return isNaN(v) ? null : v;
+  if (typeof v === 'number' && v > 1000 && v < 80000){ const p = XLSX.SSF.parse_date_code(v); return p ? new Date(p.y, p.m - 1, p.d) : null; }
+  const m = String(v).trim().match(/^(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{2,4})$/);
+  if (m){ let y = +m[3]; if (y < 100) y += y > 30 ? 1900 : 2000; return new Date(y, +m[2] - 1, +m[1]); }
+  return null;
+}
+function tblRun(){
+  const acts = [...$('tblCols').querySelectorAll('select')].map(s => s.value);
+  const has = a => acts.includes(a);
+  if (!has('fio') && !has('fam')){ report('tblReport', '<span class="err">Не выбран столбец ФИО или Фамилия (действие «Код ← …»).</span>'); return; }
+  const scan = $('tblScanText').checked;
+  const opts = piiOptions(true);
+  const now = new Date();
+  const outHdr = ['Код работника'];
+  acts.forEach((a, i) => {
+    if (a === 'keep' || a === 'tabkeep') outHdr.push(TBL.header[i]);
+    else if (a === 'age') outHdr.push(TBL.header[i] + ' → возраст, лет');
+    else if (a === 'year') outHdr.push(TBL.header[i] + ' → год');
+  });
+  const body = TBL.rows.slice(TBL.hdrIdx + 1);
+  const people = [];
+  let skipped = 0;
+  for (const r of body){
+    let fio = '', fam = '', im = '', ot = '', tab = '';
+    acts.forEach((a, i) => {
+      const v = cleanFio(fmtVal(r[i]));
+      if (a === 'fio') fio = fio ? fio + ' ' + v : v;
+      else if (a === 'fam') fam = v; else if (a === 'im') im = v; else if (a === 'ot') ot = v;
+      else if (a === 'tab' || a === 'tabkeep') tab = cleanTab(fmtVal(r[i]));
+    });
+    if (!fio) fio = [fam, im, ot].filter(Boolean).join(' ');
+    fio = cleanFio(fio);
+    // строка без ФИО или ФИО без буквы — пропуск (итоги, подзаголовки)
+    if (!fio || !/[A-Za-zА-Яа-яЁё]{2}/.test(fio) || fio.split(' ').length < 2) { if (r.some(v => fmtVal(v).trim())) skipped++; people.push(null); continue; }
+    people.push({ fio, tab, r });
+  }
+  // 1) заполняем ключ
+  let created = 0, existing = 0;
+  const seen = new Map(); const dups = [];
+  for (const p of people){
+    if (!p) continue;
+    const [e, isNew] = Key.getOrCreate(p.fio, p.tab);
+    p.e = e; if (isNew) created++; else existing++;
+    const k = e.code;
+    if (seen.has(k) && !p.tab) dups.push(p.fio);
+    seen.set(k, true);
+  }
+  // 2) формируем выход (после заполнения ключа, чтобы находить ФИО в примечаниях)
+  const stats = newStats();
+  const out = [outHdr];
+  for (const p of people){
+    if (!p) continue;
+    const row = [p.e.code];
+    acts.forEach((a, i) => {
+      let v = p.r[i];
+      if (a === 'keep' || a === 'tabkeep'){
+        if (scan && typeof v === 'string' && a === 'keep'){ const ms = findAnonMatches(v, opts, stats); v = applyMatches(v, ms); }
+        row.push(v === undefined ? '' : v);
+      } else if (a === 'age'){ const d = toDate(v); row.push(d ? ageAt(d, now) : ''); }
+      else if (a === 'year'){ const d = toDate(v); row.push(d ? d.getFullYear() : ''); }
+    });
+    out.push(row);
+  }
+  const ws = XLSX.utils.aoa_to_sheet(out, { cellDates:true, dateNF:'dd.mm.yyyy' });
+  ws['!cols'] = outHdr.map((h, i) => ({ wch: Math.min(45, Math.max(10, String(h).length + 2)) }));
+  ws['!autofilter'] = { ref: XLSX.utils.encode_range({ s:{r:0, c:0}, e:{r:out.length - 1, c:outHdr.length - 1} }) };
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Данные');
+  const bytes = XLSX.write(wb, { bookType:'xlsx', type:'array', compression:true, bookSST:true });
+  download(new Blob([bytes], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), baseName(TBL.name) + '_обезличено.xlsx');
+  updateStatus();
+  let h = `<span class="ok">Готово: строк с работниками — ${out.length - 1}; новых кодов — ${created}; найдено в ключе — ${existing}.</span>\n`;
+  if (skipped) h += `Пропущено строк без ФИО (итоги, подзаголовки, пустые): ${skipped}.\n`;
+  const removed = acts.map((a, i) => (a === 'drop' || a === 'tab' || a.match(/^(fio|fam|im|ot)$/)) ? TBL.header[i] : null).filter(Boolean);
+  h += `Удалено из результата: ${removed.map(esc).join('; ') || '—'}.\n`;
+  if (dups.length) h += `<span class="warn">Повтор ФИО без табельного номера (присвоен один код — проверьте однофамильцев, лучше указать столбец «Таб. №»): ${[...new Set(dups)].map(esc).join('; ')}</span>\n`;
+  if (scan){ const n = [...stats.persons.values()].reduce((a,b)=>a+b, 0); const pii = Object.entries(stats.pii);
+    h += `Внутри оставленных столбцов заменено ФИО: ${n}` + (pii.length ? '; замаскировано: ' + pii.map(([k,v]) => k + ' — ' + v).join(', ') : '') + '.\n'; 
+    if (stats.ambiguous.length) h += `<span class="err">Неоднозначные ФИО в оставленных столбцах (присвоен первый код, проверьте): ${stats.ambiguous.map(x => '«' + esc(x.frag) + '» → ' + x.codes.join('/')).join('; ')}</span>\n`; }
+  h += `\n<span class="warn">Сохраните ключ на вкладке «Ключ» — без него восстановить ФИО невозможно.</span>`;
+  report('tblReport', h);
+}
+
+/* ================== 2. Документ ================== */
+async function docRun(){
+  const f = $('docFile').files[0]; if (!f) return;
+  const opts = piiOptions(false);
+  const stats = newStats();
+  const ext = extOf(f.name);
+  try {
+    if (['docx','docm','xlsx','xlsm','pptx'].includes(ext)){
+      const blob = await processOoxml(f, t => findAnonMatches(t, opts, stats), { scrub:$('pMeta').checked, residualStats:stats });
+      download(blob, baseName(f.name) + '_обезличено.' + ext);
+    } else {
+      const t = await readTextFile(f);
+      const r = applyMatches(t, findAnonMatches(t, opts, stats));
+      scanResidual(r, stats);
+      download(new Blob(['﻿' + r], { type:'text/plain;charset=utf-8' }), baseName(f.name) + '_обезличено.' + ext);
+    }
+    report('docReport', anonReportHtml(stats, `Файл: ${esc(f.name)}\n`));
+  } catch (e){ report('docReport', `<span class="err">Ошибка обработки: ${esc(e.message)}</span>`); }
+}
+function docTextRun(){
+  const t = $('docText').value; const stats = newStats();
+  const r = applyMatches(t, findAnonMatches(t, piiOptions(false), stats));
+  scanResidual(r, stats);
+  $('docText').value = r;
+  report('docReport', anonReportHtml(stats, 'Текст обезличен в поле ввода.\n'));
+}
+
+/* ================== 3. Восстановление ================== */
+async function rRun(){
+  const f = $('rFile').files[0]; if (!f) return;
+  const fmt = $('rFormat').value; const stats = newStats(); const ext = extOf(f.name);
+  try {
+    if (['docx','docm','xlsx','xlsm','pptx'].includes(ext)){
+      const blob = await processOoxml(f, t => findRestoreMatches(t, fmt, stats));
+      download(blob, baseName(f.name).replace(/_обезличено$/, '') + '_с_ФИО.' + ext);
+    } else {
+      const t = await readTextFile(f);
+      const r = applyMatches(t, findRestoreMatches(t, fmt, stats));
+      download(new Blob(['﻿' + r], { type:'text/plain;charset=utf-8' }), baseName(f.name) + '_с_ФИО.' + ext);
+    }
+    report('rReport', restoreReportHtml(stats));
+  } catch (e){ report('rReport', `<span class="err">Ошибка обработки: ${esc(e.message)}</span>`); }
+}
+function rTextRun(){
+  const t = $('rText').value; const stats = newStats();
+  $('rText').value = applyMatches(t, findRestoreMatches(t, $('rFormat').value, stats));
+  report('rReport', restoreReportHtml(stats));
+}
+
+/* ================== Ключ: шифрование ================== */
+const b64 = { enc: u => { let s = ''; u = new Uint8Array(u); for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000)); return btoa(s); },
+              dec: s => Uint8Array.from(atob(s), c => c.charCodeAt(0)) };
+async function deriveKey(pw, salt){
+  const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(pw), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey({ name:'PBKDF2', salt, iterations:310000, hash:'SHA-256' }, base, { name:'AES-GCM', length:256 }, false, ['encrypt', 'decrypt']);
+}
+async function kSave(){
+  if (!Key.entries.length){ report('kReport', '<span class="warn">Ключ пуст.</span>'); return; }
+  const p1 = $('kPw1').value, p2 = $('kPw2').value;
+  if (p1 !== p2){ report('kReport', '<span class="err">Пароли не совпадают.</span>'); return; }
+  const payload = JSON.stringify({ entries:Key.entries, next:Key.next });
+  let obj;
+  if (p1){
+    if (!window.crypto || !crypto.subtle){ report('kReport', '<span class="err">Браузер не поддерживает шифрование для файлов с диска. Откройте файл в Edge/Chrome/Яндекс.Браузере.</span>'); return; }
+    const salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12));
+    const k = await deriveKey(p1, salt);
+    const ct = await crypto.subtle.encrypt({ name:'AES-GCM', iv }, k, new TextEncoder().encode(payload));
+    obj = { format:'shifr-pdn-key', v:1, encrypted:true, saved:new Date().toISOString(), count:Key.entries.length, salt:b64.enc(salt), iv:b64.enc(iv), data:b64.enc(ct) };
+  } else {
+    if (!confirm('Сохранить ключ без пароля? ФИО будут храниться в открытом виде.')) return;
+    obj = { format:'shifr-pdn-key', v:1, encrypted:false, saved:new Date().toISOString(), count:Key.entries.length, data:JSON.parse(payload) };
+  }
+  const d = new Date(); const stamp = d.getFullYear() + String(d.getMonth()+1).padStart(2,'0') + String(d.getDate()).padStart(2,'0');
+  download(new Blob([JSON.stringify(obj)], { type:'application/json' }), `ключ_ПДн_${stamp}.json`);
+  Key.dirty = false; updateStatus();
+  report('kReport', `<span class="ok">Ключ сохранён (${Key.entries.length} работн.${p1 ? ', зашифрован' : ', без пароля'}).</span>\nПредыдущую версию ключа можно удалить после проверки новой.`);
+}
+async function kOpen(){
+  const f = $('kFile').files[0]; if (!f) return;
+  try {
+    const obj = JSON.parse(await f.text());
+    if (obj.format !== 'shifr-pdn-key') throw new Error('Это не файл ключа');
+    let data;
+    if (obj.encrypted){
+      const pw = $('kOpenPw').value;
+      if (!pw) throw new Error('Введите пароль');
+      const k = await deriveKey(pw, b64.dec(obj.salt));
+      try { data = JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({ name:'AES-GCM', iv:b64.dec(obj.iv) }, k, b64.dec(obj.data)))); }
+      catch (e){ throw new Error('Неверный пароль или файл повреждён'); }
+    } else data = obj.data;
+    if (Key.entries.length && Key.dirty && !confirm('В окне есть несохранённый ключ. Заменить его открываемым?')) return;
+    Key.entries = data.entries; Key.next = data.next; Key.dirty = false; Key.reindex();
+    $('kOpenPw').value = '';
+    updateStatus();
+    report('kReport', `<span class="ok">Ключ открыт: ${Key.entries.length} работн., сохранён ${new Date(obj.saved).toLocaleString('ru-RU')}.</span>`);
+  } catch (e){ report('kReport', `<span class="err">${esc(e.message)}</span>`); }
+}
+function kExport(){
+  if (!Key.entries.length) return;
+  const aoa = [['Код', 'ФИО', 'Таб. №'], ...Key.entries.map(e => [e.code, e.fio, e.tab])];
+  const ws = XLSX.utils.aoa_to_sheet(aoa); ws['!cols'] = [{wch:10}, {wch:40}, {wch:12}];
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Ключ');
+  download(new Blob([XLSX.write(wb, { bookType:'xlsx', type:'array' })]), 'ключ_ПДн_НЕ_ПЕРЕДАВАТЬ.xlsx');
+}
+function renderKeyTable(){
+  const q = normFio($('kSearch').value);
+  const list = q ? Key.entries.filter(e => normFio(e.code + ' ' + e.fio + ' ' + e.tab).includes(q)) : Key.entries.slice(-20);
+  $('kTable').innerHTML = '<tr><th>Код</th><th>ФИО</th><th>Таб. №</th></tr>' +
+    list.slice(0, 200).map(e => `<tr><td>${esc(e.code)}</td><td>${esc(e.fio)}</td><td>${esc(e.tab)}</td></tr>`).join('') +
+    (q ? '' : (Key.entries.length > 20 ? `<tr><td colspan="3" class="muted">показаны последние 20 из ${Key.entries.length}</td></tr>` : ''));
+}
+
+/* ================== Привязка событий ================== */
+document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('#tabs button').forEach(x => x.classList.toggle('active', x === b));
+  document.querySelectorAll('section.tab').forEach(s => s.classList.toggle('active', s.id === b.dataset.tab));
+});
+$('tblFile').onchange = () => tblLoad().catch(e => report('tblReport', `<span class="err">Не удалось прочитать файл: ${esc(e.message)}</span>`));
+$('tblSheet').onchange = () => tblParse(true);
+$('tblReload').onclick = () => tblParse(false);
+$('tblHeader').onchange = () => tblParse(false);
+$('tblMerges').onchange = () => tblParse(false);
+$('tblRun').onclick = () => { try { tblRun(); } catch (e){ report('tblReport', `<span class="err">Ошибка: ${esc(e.message)}</span>`); } };
+$('docFile').onchange = () => { $('docRun').disabled = !$('docFile').files.length; };
+$('docRun').onclick = docRun;
+$('docTextRun').onclick = docTextRun;
+$('docTextCopy').onclick = () => copyText($('docText').value);
+$('rFile').onchange = () => { $('rRun').disabled = !$('rFile').files.length; };
+$('rRun').onclick = rRun;
+$('rTextRun').onclick = rTextRun;
+$('rTextCopy').onclick = () => copyText($('rText').value);
+$('kFile').onchange = () => { $('kOpen').disabled = !$('kFile').files.length; };
+$('kOpen').onclick = kOpen;
+$('kSave').onclick = () => kSave().catch(e => report('kReport', `<span class="err">${esc(e.message)}</span>`));
+$('kExport').onclick = kExport;
+$('kSearch').oninput = renderKeyTable;
+$('kAdd').onclick = () => {
+  const fio = cleanFio($('kAddFio').value);
+  if (fio.split(' ').length < 2){ report('kReport', '<span class="err">Укажите минимум фамилию и имя.</span>'); return; }
+  const [e, isNew] = Key.getOrCreate(fio, $('kAddTab').value);
+  $('kAddFio').value = ''; $('kAddTab').value = ''; updateStatus();
+  report('kReport', isNew ? `<span class="ok">Добавлен: ${esc(e.code)}</span>` : `Уже есть в ключе: ${esc(e.code)}`);
+};
+$('kClear').onclick = () => { if (confirm('Очистить ключ в этом окне? Сохранённый файл ключа не затрагивается.')){ Key.clear(); updateStatus(); } };
+$('promptCopy').onclick = () => copyText($('promptText').textContent);
+window.addEventListener('beforeunload', e => { if (Key.dirty){ e.preventDefault(); e.returnValue = ''; } });
+updateStatus();
+</script>
+</body>
+</html>
