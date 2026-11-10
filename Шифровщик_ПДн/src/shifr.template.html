@@ -341,6 +341,7 @@ function updateStatus(){
     : 'Ключ: <b>пуст</b> — откройте сохранённый ключ или обезличьте шахматку';
   renderKeyTable();
 }
+function errText(e){ return (e && e.message) || String(e) || 'неизвестная ошибка'; }
 function esc(s){ return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function reEsc(s){ return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
 function eqRe(s){ return reEsc(s).replace(/[её]/gi, '[ЕЁеё]'); }
@@ -763,7 +764,7 @@ function tblRun(){
     });
     out.push(row);
   }
-  const ws = XLSX.utils.aoa_to_sheet(out, { cellDates:true, dateNF:'dd.mm.yyyy' });
+  const ws = XLSX.utils.aoa_to_sheet(out, { cellDates:true, dateNF:'dd\\.mm\\.yyyy' });
   ws['!cols'] = outHdr.map((h, i) => ({ wch: Math.min(45, Math.max(10, String(h).length + 2)) }));
   ws['!autofilter'] = { ref: XLSX.utils.encode_range({ s:{r:0, c:0}, e:{r:out.length - 1, c:outHdr.length - 1} }) };
   const wb = XLSX.utils.book_new();
@@ -800,7 +801,7 @@ async function docRun(){
       download(new Blob(['﻿' + r], { type:'text/plain;charset=utf-8' }), baseName(f.name) + '_обезличено.' + ext);
     }
     report('docReport', anonReportHtml(stats, `Файл: ${esc(f.name)}\n`));
-  } catch (e){ report('docReport', `<span class="err">Ошибка обработки: ${esc(e.message)}</span>`); }
+  } catch (e){ report('docReport', `<span class="err">Ошибка обработки: ${esc(errText(e))}</span>`); }
 }
 function docTextRun(){
   const t = $('docText').value; const stats = newStats();
@@ -824,7 +825,7 @@ async function rRun(){
       download(new Blob(['﻿' + r], { type:'text/plain;charset=utf-8' }), baseName(f.name) + '_с_ФИО.' + ext);
     }
     report('rReport', restoreReportHtml(stats));
-  } catch (e){ report('rReport', `<span class="err">Ошибка обработки: ${esc(e.message)}</span>`); }
+  } catch (e){ report('rReport', `<span class="err">Ошибка обработки: ${esc(errText(e))}</span>`); }
 }
 function rTextRun(){
   const t = $('rText').value; const stats = newStats();
@@ -878,7 +879,7 @@ async function kOpen(){
     $('kOpenPw').value = '';
     updateStatus();
     report('kReport', `<span class="ok">Ключ открыт: ${Key.entries.length} работн., сохранён ${new Date(obj.saved).toLocaleString('ru-RU')}.</span>`);
-  } catch (e){ report('kReport', `<span class="err">${esc(e.message)}</span>`); }
+  } catch (e){ report('kReport', `<span class="err">${esc(errText(e))}</span>`); }
 }
 function kExport(){
   if (!Key.entries.length) return;
@@ -900,12 +901,12 @@ document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => {
   document.querySelectorAll('#tabs button').forEach(x => x.classList.toggle('active', x === b));
   document.querySelectorAll('section.tab').forEach(s => s.classList.toggle('active', s.id === b.dataset.tab));
 });
-$('tblFile').onchange = () => tblLoad().catch(e => report('tblReport', `<span class="err">Не удалось прочитать файл: ${esc(e.message)}</span>`));
+$('tblFile').onchange = () => tblLoad().catch(e => report('tblReport', `<span class="err">Не удалось прочитать файл: ${esc(errText(e))}</span>`));
 $('tblSheet').onchange = () => tblParse(true);
 $('tblReload').onclick = () => tblParse(false);
 $('tblHeader').onchange = () => tblParse(false);
 $('tblMerges').onchange = () => tblParse(false);
-$('tblRun').onclick = () => { try { tblRun(); } catch (e){ report('tblReport', `<span class="err">Ошибка: ${esc(e.message)}</span>`); } };
+$('tblRun').onclick = () => { try { tblRun(); } catch (e){ report('tblReport', `<span class="err">Ошибка: ${esc(errText(e))}</span>`); } };
 $('docFile').onchange = () => { $('docRun').disabled = !$('docFile').files.length; };
 $('docRun').onclick = docRun;
 $('docTextRun').onclick = docTextRun;
@@ -916,7 +917,7 @@ $('rTextRun').onclick = rTextRun;
 $('rTextCopy').onclick = () => copyText($('rText').value);
 $('kFile').onchange = () => { $('kOpen').disabled = !$('kFile').files.length; };
 $('kOpen').onclick = kOpen;
-$('kSave').onclick = () => kSave().catch(e => report('kReport', `<span class="err">${esc(e.message)}</span>`));
+$('kSave').onclick = () => kSave().catch(e => report('kReport', `<span class="err">${esc(errText(e))}</span>`));
 $('kExport').onclick = kExport;
 $('kSearch').oninput = renderKeyTable;
 $('kAdd').onclick = () => {
