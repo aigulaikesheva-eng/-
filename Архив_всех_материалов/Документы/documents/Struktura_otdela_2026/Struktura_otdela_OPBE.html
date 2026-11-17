@@ -1,0 +1,528 @@
+<title>Отдел производственной безопасности и экологии</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=PT+Mono&display=swap">
+<style>
+/* Layout: служебный документ в одну колонку ~ 860px, широкие таблицы и схема — в собственных прокручиваемых контейнерах.
+   Цвета направлений — по сигнальным цветам ГОСТ 12.4.026: синий (предписание) — ОТ, красный — ПБ и ГОЧС, жёлтый — промбезопасность, зелёный — экология. */
+:root {
+  --bg: #f6f7f8;
+  --paper: #ffffff;
+  --ink: #1b2229;
+  --muted: #5b6672;
+  --line: #d9dee3;
+  --soft: #eef1f4;
+  --accent: #23415e;
+  --ot: #1f5fa8;
+  --ot-t: #e6eef8;
+  --pb: #c0362c;
+  --pb-t: #fbe9e7;
+  --prom: #b38600;
+  --prom-t: #fbf3d9;
+  --eco: #2e7d4f;
+  --eco-t: #e5f3ea;
+  --font-body: "Golos Text", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "PT Mono", "Consolas", "Courier New", monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12161a; --paper: #1a2026; --ink: #e4e8ec; --muted: #9aa5b0; --line: #2f3841; --soft: #222a31;
+    --accent: #9cc0e4;
+    --ot: #6fa6e6; --ot-t: #1c2a3a; --pb: #ec7a70; --pb-t: #3a2220; --prom: #e3be4f; --prom-t: #362e17; --eco: #6cc792; --eco-t: #1b3326;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12161a; --paper: #1a2026; --ink: #e4e8ec; --muted: #9aa5b0; --line: #2f3841; --soft: #222a31;
+  --accent: #9cc0e4;
+  --ot: #6fa6e6; --ot-t: #1c2a3a; --pb: #ec7a70; --pb-t: #3a2220; --prom: #e3be4f; --prom-t: #362e17; --eco: #6cc792; --eco-t: #1b3326;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink);
+  font-family: var(--font-body); font-size: 15px; line-height: 1.55;
+}
+.page {
+  max-width: 920px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 32px 64px;
+  display: grid; gap: 40px;
+}
+header.doc { display: grid; gap: 10px; border-bottom: 2px solid var(--ink); padding-bottom: 20px; }
+.meta { font-family: var(--font-mono); font-size: 12px; color: var(--muted); letter-spacing: .04em; text-transform: uppercase; display: flex; flex-wrap: wrap; gap: 6px 18px; }
+h1 { font-size: clamp(24px, 4vw, 32px); line-height: 1.2; margin: 0; font-weight: 700; text-wrap: balance; }
+.lead { margin: 0; color: var(--muted); max-width: 68ch; }
+section { display: grid; gap: 14px; min-width: 0; }
+h2 { font-size: 20px; margin: 0; font-weight: 700; display: flex; gap: 10px; align-items: baseline; text-wrap: balance; }
+h2 .n { font-family: var(--font-mono); font-size: 14px; color: var(--muted); font-weight: 400; }
+h3 { font-size: 16px; margin: 0; font-weight: 600; }
+p { margin: 0; max-width: 72ch; }
+ul, ol { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
+.mono { font-family: var(--font-mono); }
+.muted { color: var(--muted); }
+.small { font-size: 13px; }
+
+.scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; border: 1px solid var(--line); border-radius: 6px; background: var(--paper); }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: left; vertical-align: top; padding: 9px 12px; border-bottom: 1px solid var(--line); }
+th { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); font-weight: 600; background: var(--soft); white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+tfoot td { font-weight: 700; background: var(--soft); }
+
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.facts div { background: var(--paper); padding: 12px 14px; display: grid; gap: 2px; }
+.facts b { font-size: 22px; font-variant-numeric: tabular-nums; }
+.facts span { font-size: 13px; color: var(--muted); }
+
+.chart { overflow-x: auto; border: 1px solid var(--line); border-radius: 6px; background: var(--paper); padding: 8px; }
+.chart svg { display: block; width: 100%; min-width: 880px; height: auto; }
+svg text { font-family: var(--font-body); fill: var(--ink); }
+svg .t-muted { fill: var(--muted); }
+svg .box { fill: var(--paper); stroke: var(--line); stroke-width: 1.2; }
+svg .box-ctx { fill: var(--soft); stroke: var(--line); stroke-dasharray: 4 3; }
+svg .box-head { fill: var(--accent); }
+svg .t-inv { fill: var(--paper); }
+svg .wire { stroke: var(--muted); stroke-width: 1.4; fill: none; }
+svg .wire-dash { stroke: var(--muted); stroke-width: 1.2; fill: none; stroke-dasharray: 5 4; }
+svg .g-ot { fill: var(--ot-t); stroke: var(--ot); }
+svg .g-pb { fill: var(--pb-t); stroke: var(--pb); }
+svg .g-prom { fill: var(--prom-t); stroke: var(--prom); }
+svg .g-eco { fill: var(--eco-t); stroke: var(--eco); }
+svg .bar-ot { fill: var(--ot); } svg .bar-pb { fill: var(--pb); } svg .bar-prom { fill: var(--prom); } svg .bar-eco { fill: var(--eco); }
+svg .band { fill: var(--soft); stroke: var(--line); }
+
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; color: var(--muted); }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+
+.compare { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+.compare > div { background: var(--paper); border: 1px solid var(--line); border-radius: 6px; padding: 14px 16px; display: grid; gap: 8px; align-content: start; min-width: 0; }
+.compare h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+
+.roles { display: grid; gap: 12px; }
+.role { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--c, var(--accent)); border-radius: 4px; padding: 14px 16px; display: grid; gap: 8px; min-width: 0; }
+.role header { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 16px; align-items: baseline; }
+.role .q { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.role ul { font-size: 14px; }
+.c-ot { --c: var(--ot); } .c-pb { --c: var(--pb); } .c-prom { --c: var(--prom); } .c-eco { --c: var(--eco); } .c-head { --c: var(--accent); }
+
+.tag { display: inline-block; font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; padding: 2px 7px; border-radius: 3px; white-space: nowrap; }
+.tag.ot { background: var(--ot-t); color: var(--ot); } .tag.pb { background: var(--pb-t); color: var(--pb); }
+.tag.prom { background: var(--prom-t); color: var(--prom); } .tag.eco { background: var(--eco-t); color: var(--eco); }
+
+.note { background: var(--paper); border: 1px solid var(--line); border-radius: 6px; padding: 14px 16px; display: grid; gap: 8px; }
+.steps { list-style: none; padding: 0; display: grid; gap: 0; counter-reset: s; }
+.steps li { display: grid; grid-template-columns: 110px 1fr; gap: 14px; padding: 12px 0; border-top: 1px solid var(--line); }
+.steps li:first-child { border-top: 0; }
+.steps .when { font-family: var(--font-mono); font-size: 13px; color: var(--muted); }
+@media (max-width: 560px) { .steps li { grid-template-columns: 1fr; gap: 2px; } }
+
+.ask { border: 2px solid var(--ink); border-radius: 6px; padding: 16px 18px; display: grid; gap: 10px; background: var(--paper); }
+footer.src { font-size: 12px; color: var(--muted); display: grid; gap: 6px; border-top: 1px solid var(--line); padding-top: 16px; }
+footer.src a { color: var(--muted); }
+a { color: var(--accent); }
+a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+</style>
+
+<div class="page">
+
+<header class="doc">
+  <div class="meta"><span>ООО «Авиационные Интерьеры-СН»</span><span>Москва</span><span>Октябрь 2026</span><span>Проект</span></div>
+  <h1>Отдел производственной безопасности и экологии: структура, численность, оплата труда</h1>
+  <p class="lead">Предложение главному инженеру по составу отдела после передачи в его подчинение и присоединения функций пожарной безопасности, ГО и ЧС и промышленной безопасности.</p>
+</header>
+
+<!-- 1 -->
+<section>
+  <h2><span class="n">1</span>Исходные данные</h2>
+  <div class="facts">
+    <div><b>≈ 750</b><span>работников всего</span></div>
+    <div><b>≈ 500</b><span>производственный персонал</span></div>
+    <div><b>7</b><span>территориально обособленных площадок</span></div>
+    <div><b>5</b><span>направлений в одном отделе</span></div>
+  </div>
+  <p>Производство: формование и сборка изделий из стеклопластика и ПКМ (смолы, препреги, клеи), окраска и нанесение ЛКМ, деревообработка и работа со шпоном, металлообработка, лазерная резка с применением кислорода, швейно-обивочные работы (кожа, ткани, поролон), сборка и монтаж интерьеров, сервис у заказчика.</p>
+  <p>Что это значит для отдела:</p>
+  <ul>
+    <li>вредные факторы на композитном и окрасочном участках (стирол, растворители, пыль ПКМ) — СОУТ, СИЗ органов дыхания, медосмотры по приказу Минздрава № 29н;</li>
+    <li>высокая пожарная нагрузка: склады тканей, кожи, пенополиуретана, шпона, ЛВЖ и ГЖ; окрасочные камеры относятся к категориям помещений Б или В по взрывопожарной опасности;</li>
+    <li>оборудование, подпадающее под федеральные нормы Ростехнадзора: подъёмные сооружения, сосуды под давлением (ресиверы компрессорных, кислородное оборудование лазерного комплекса);</li>
+    <li>выбросы ЛОС от окраски и формования, отходы ПКМ, тары из-под ЛКМ, отработанных ламп — каждая площадка может быть отдельным объектом НВОС со своей отчётностью.</li>
+  </ul>
+</section>
+
+<!-- 2 -->
+<section>
+  <h2><span class="n">2</span>Что меняется</h2>
+  <div class="compare">
+    <div>
+      <h3>Сейчас</h3>
+      <ul>
+        <li>Отдел ОТ и экологии</li>
+        <li>Подчинение: директор по персоналу</li>
+        <li>Пожарная безопасность, ГО и ЧС, промбезопасность — у разных служб или в виде совмещений</li>
+        <li>Нет единого владельца рисков по площадкам</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Предлагается</h3>
+      <ul>
+        <li>Отдел производственной безопасности и экологии (ОПБЭ)</li>
+        <li>Подчинение: главный инженер</li>
+        <li>Пять направлений: охрана труда, пожарная безопасность, ГО и ЧС, промышленная безопасность, экология</li>
+        <li>Единые требования, единый график проверок, единая отчётность по 7 площадкам</li>
+      </ul>
+    </div>
+  </div>
+  <p>Переход к главному инженеру оправдан: основные источники опасности (оборудование, техпроцессы, здания, инженерные системы) находятся в его зоне. Рекомендации Минтруда (приказ от 31.01.2022 № 37) допускают подчинение службы ОТ заместителю руководителя организации, поэтому требование закона выполняется.</p>
+</section>
+
+<!-- 3 -->
+<section>
+  <h2><span class="n">3</span>Структура отдела</h2>
+  <div class="chart">
+    <svg viewBox="0 0 1040 640" role="img" aria-label="Организационная структура отдела производственной безопасности и экологии">
+      <!-- верх -->
+      <rect class="box box-ctx" x="420" y="10" width="200" height="44" rx="4"/>
+      <text x="520" y="37" text-anchor="middle" font-size="14">Генеральный директор</text>
+      <line class="wire" x1="520" y1="54" x2="520" y2="84"/>
+      <rect class="box box-ctx" x="420" y="84" width="200" height="44" rx="4"/>
+      <text x="520" y="111" text-anchor="middle" font-size="14" font-weight="600">Главный инженер</text>
+      <line class="wire" x1="520" y1="128" x2="520" y2="158"/>
+      <rect class="box-head" x="370" y="158" width="300" height="60" rx="4"/>
+      <text class="t-inv" x="520" y="184" text-anchor="middle" font-size="15" font-weight="700">Начальник отдела ПБЭ</text>
+      <text class="t-inv" x="520" y="205" text-anchor="middle" font-size="12">1 шт. ед.</text>
+      <!-- прямой доклад -->
+      <path class="wire-dash" d="M670 188 H760 V32 H620"/>
+      <text class="t-muted" x="772" y="100" font-size="11.5">прямой доклад ГД</text>
+      <text class="t-muted" x="772" y="115" font-size="11.5">при угрозе жизни и здоровью,</text>
+      <text class="t-muted" x="772" y="130" font-size="11.5">предписании надзорного органа</text>
+
+      <!-- шина -->
+      <line class="wire" x1="520" y1="218" x2="520" y2="244"/>
+      <line class="wire" x1="130" y1="244" x2="910" y2="244"/>
+      <line class="wire" x1="130" y1="244" x2="130" y2="264"/>
+      <line class="wire" x1="390" y1="244" x2="390" y2="264"/>
+      <line class="wire" x1="650" y1="244" x2="650" y2="264"/>
+      <line class="wire" x1="910" y1="244" x2="910" y2="264"/>
+
+      <!-- группа ОТ -->
+      <rect class="g-ot" x="20" y="264" width="220" height="54" rx="4" stroke-width="1.2"/>
+      <rect class="bar-ot" x="20" y="264" width="220" height="5" rx="2"/>
+      <text x="130" y="290" text-anchor="middle" font-size="14" font-weight="700">Группа охраны труда</text>
+      <text class="t-muted" x="130" y="308" text-anchor="middle" font-size="12">4 шт. ед.</text>
+      <path class="wire" d="M34 318 V547"/>
+      <path class="wire" d="M34 353 H46 M34 413 H46 M34 473 H46 M34 533 H46"/>
+      <rect class="box" x="46" y="330" width="194" height="46" rx="3"/>
+      <text x="56" y="349" font-size="12.5" font-weight="600">Ведущий специалист по ОТ</text>
+      <text class="t-muted" x="56" y="366" font-size="11.5">рук. группы, зам. начальника</text>
+      <rect class="box" x="46" y="390" width="194" height="46" rx="3"/>
+      <text x="56" y="409" font-size="12.5" font-weight="600">Специалист по ОТ</text>
+      <text class="t-muted" x="56" y="426" font-size="11.5">куратор площадок П1–П4</text>
+      <rect class="box" x="46" y="450" width="194" height="46" rx="3"/>
+      <text x="56" y="469" font-size="12.5" font-weight="600">Специалист по ОТ</text>
+      <text class="t-muted" x="56" y="486" font-size="11.5">куратор площадок П5–П7</text>
+      <rect class="box" x="46" y="510" width="194" height="46" rx="3"/>
+      <text x="56" y="529" font-size="12.5" font-weight="600">Специалист по ОТ</text>
+      <text class="t-muted" x="56" y="546" font-size="11.5">обучение, СИЗ, медосмотры</text>
+
+      <!-- группа ПБ и ГОЧС -->
+      <rect class="g-pb" x="280" y="264" width="220" height="54" rx="4" stroke-width="1.2"/>
+      <rect class="bar-pb" x="280" y="264" width="220" height="5" rx="2"/>
+      <text x="390" y="290" text-anchor="middle" font-size="14" font-weight="700">Группа ПБ и ГО и ЧС</text>
+      <text class="t-muted" x="390" y="308" text-anchor="middle" font-size="12">3 шт. ед.</text>
+      <path class="wire" d="M294 318 V487"/>
+      <path class="wire" d="M294 353 H306 M294 413 H306 M294 473 H306"/>
+      <rect class="box" x="306" y="330" width="194" height="46" rx="3"/>
+      <text x="316" y="349" font-size="12.5" font-weight="600">Ведущий инженер по ПБ</text>
+      <text class="t-muted" x="316" y="366" font-size="11.5">руководитель группы</text>
+      <rect class="box" x="306" y="390" width="194" height="46" rx="3"/>
+      <text x="316" y="409" font-size="12.5" font-weight="600">Инженер по ПБ</text>
+      <text class="t-muted" x="316" y="426" font-size="11.5">площадки, системы ПБ</text>
+      <rect class="box" x="306" y="450" width="194" height="46" rx="3"/>
+      <text x="316" y="469" font-size="12.5" font-weight="600">Ведущий специалист</text>
+      <text class="t-muted" x="316" y="486" font-size="11.5">по ГО и ЧС</text>
+
+      <!-- промбез -->
+      <rect class="g-prom" x="540" y="264" width="220" height="54" rx="4" stroke-width="1.2"/>
+      <rect class="bar-prom" x="540" y="264" width="220" height="5" rx="2"/>
+      <text x="650" y="290" text-anchor="middle" font-size="14" font-weight="700">Промышленная безопасность</text>
+      <text class="t-muted" x="650" y="308" text-anchor="middle" font-size="12">1 шт. ед.</text>
+      <path class="wire" d="M554 318 V367"/>
+      <path class="wire" d="M554 353 H566"/>
+      <rect class="box" x="566" y="330" width="194" height="46" rx="3"/>
+      <text x="576" y="349" font-size="12.5" font-weight="600">Ведущий инженер по ПрБ</text>
+      <text class="t-muted" x="576" y="366" font-size="11.5">производственный контроль</text>
+
+      <!-- экология -->
+      <rect class="g-eco" x="800" y="264" width="220" height="54" rx="4" stroke-width="1.2"/>
+      <rect class="bar-eco" x="800" y="264" width="220" height="5" rx="2"/>
+      <text x="910" y="290" text-anchor="middle" font-size="14" font-weight="700">Группа экологии</text>
+      <text class="t-muted" x="910" y="308" text-anchor="middle" font-size="12">2 шт. ед.</text>
+      <path class="wire" d="M814 318 V427"/>
+      <path class="wire" d="M814 353 H826 M814 413 H826"/>
+      <rect class="box" x="826" y="330" width="194" height="46" rx="3"/>
+      <text x="836" y="349" font-size="12.5" font-weight="600">Ведущий инженер-эколог</text>
+      <text class="t-muted" x="836" y="366" font-size="11.5">руководитель группы</text>
+      <rect class="box" x="826" y="390" width="194" height="46" rx="3"/>
+      <text x="836" y="409" font-size="12.5" font-weight="600">Инженер-эколог</text>
+      <text class="t-muted" x="836" y="426" font-size="11.5">отчётность, отходы</text>
+
+      <!-- площадки -->
+      <path class="wire-dash" d="M130 556 V580 M390 496 V580 M650 376 V580 M910 436 V580"/>
+      <rect class="band" x="20" y="580" width="1000" height="50" rx="4"/>
+      <text x="520" y="601" text-anchor="middle" font-size="13" font-weight="600">Площадки П1–П7: ответственные лица, назначенные приказом (вне штата отдела)</text>
+      <text class="t-muted" x="520" y="619" text-anchor="middle" font-size="11.5">руководитель площадки — ОТ и ПБ на площадке · ответственный за ОПО · ответственный за обращение с отходами · уполномоченный по ГО</text>
+    </svg>
+  </div>
+  <div class="legend">
+    <span><i style="background:var(--ot)"></i>Охрана труда</span>
+    <span><i style="background:var(--pb)"></i>Пожарная безопасность, ГО и ЧС</span>
+    <span><i style="background:var(--prom)"></i>Промышленная безопасность</span>
+    <span><i style="background:var(--eco)"></i>Экология</span>
+    <span>Цвета — сигнальные цвета ГОСТ 12.4.026</span>
+  </div>
+  <p><b>Итого: 11 штатных единиц.</b> Линейная структура с группами. Руководители групп работают «играющими тренерами»: у них свой участок работы, а не только контроль подчинённых. Площадки закреплены за кураторами по территориальному принципу, чтобы на каждой площадке был один постоянный специалист по ОТ, который знает людей и оборудование.</p>
+</section>
+
+<!-- 4 -->
+<section>
+  <h2><span class="n">4</span>Обоснование численности</h2>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Направление</th><th class="num">Ед.</th><th>Норма закона</th><th>Что формирует нагрузку</th></tr></thead>
+      <tbody>
+        <tr><td><span class="tag ot">ОТ</span></td><td class="num">4</td>
+          <td>ст. 223 ТК РФ: служба ОТ обязательна при численности более 50 человек. Рекомендации по численности — приказ Минтруда от 31.01.2022 № 37.</td>
+          <td>Базовая потребность для 750 работников — 3 ед. Поправка +1 ед. на 7 обособленных площадок и вредные условия на композитном и окрасочном производстве. Объём: оценка профрисков, СОУТ, СИЗ на ~500 человек, медосмотры, обучение по Пост. № 2464, расследование НС.</td></tr>
+        <tr><td><span class="tag pb">ПБ</span></td><td class="num">2</td>
+          <td>ФЗ № 69-ФЗ, ФЗ № 123-ФЗ, ППР в РФ (Пост. № 1479). Обучение мерам ПБ — приказ МЧС № 806.</td>
+          <td>7 объектов защиты с разными системами АПС, СОУЭ, АУПТ и разными подрядчиками по ТО. Категорирование помещений, инструкции о мерах ПБ по каждой площадке, тренировки по эвакуации, обучение, огнезащита, проверки МЧС.</td></tr>
+        <tr><td><span class="tag pb">ГО и ЧС</span></td><td class="num">1</td>
+          <td>ФЗ № 28-ФЗ, ФЗ № 68-ФЗ. Пост. № 782: в организации создаётся подразделение или назначаются работники, уполномоченные на решение задач ГО.</td>
+          <td>План действий по предупреждению и ликвидации ЧС, КЧС и ОПБ, обучение по ГО и защите от ЧС (Пост. № 1485), вводный инструктаж по ГО для новых работников, связь с ГУ МЧС по Москве и МО.</td></tr>
+        <tr><td><span class="tag prom">ПрБ</span></td><td class="num">1</td>
+          <td>ФЗ № 116-ФЗ, Пост. № 2168 (производственный контроль), Пост. № 1365 (аттестация), ФНП «ПС» и ФНП «ОРПД».</td>
+          <td>Учёт ОПО в госреестре, ОСОПО, производственный контроль, аттестация ИТР в Ростехнадзоре, допуск персонала (стропальщики, крановщики, операторы сосудов), освидетельствования, экспертиза ПБ.</td></tr>
+        <tr><td><span class="tag eco">Экология</span></td><td class="num">2</td>
+          <td>ФЗ № 7-ФЗ, ФЗ № 89-ФЗ, ФЗ № 96-ФЗ. ПЭК — ст. 67 ФЗ № 7-ФЗ, приказ Минприроды № 109.</td>
+          <td>До 7 объектов НВОС, по каждому своя отчётность: 2-ТП (воздух), 2-ТП (отходы), декларация о плате за НВОС, отчёт по ПЭК. Инвентаризация выбросов, паспорта отходов, договоры с региональным оператором и лицензиатами.</td></tr>
+        <tr><td><span class="muted">Руководство</span></td><td class="num">1</td>
+          <td>—</td>
+          <td>Управление отделом, бюджет, взаимодействие с надзорными органами, отчёт главному инженеру и ГД.</td></tr>
+      </tbody>
+      <tfoot><tr><td>Итого</td><td class="num">11</td><td colspan="2">1 работник отдела на ~68 работников компании, на ~45 человек производственного персонала</td></tr></tfoot>
+    </table>
+  </div>
+  <div class="note small">
+    <p><b>Минимальный вариант — 9 ед.</b> Без инженера по ПБ и без одного куратора площадок по ОТ. Работать можно, но один специалист по ОТ ведёт все 7 площадок, а ведущий инженер по ПБ сам выезжает на каждую проверку. В этом варианте выезд на площадку реже, чем раз в 2 недели, и растёт риск пропустить нарушение до проверки ГИТ или МЧС.</p>
+  </div>
+</section>
+
+<!-- 5 -->
+<section>
+  <h2><span class="n">5</span>Штатное расписание и оплата труда</h2>
+  <p class="small muted">Суммы — месячный доход до вычета НДФЛ (оклад + ежемесячная премия), тыс. ₽. Рыночный диапазон — Москва, производственные компании, 2026 год.</p>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Должность</th><th class="num">Ед.</th><th class="num">Рынок</th><th class="num">Предлагаю</th><th class="num">ФОТ в месяц</th></tr></thead>
+      <tbody>
+        <tr><td>Начальник отдела ПБЭ</td><td class="num">1</td><td class="num">230–350</td><td class="num">300</td><td class="num">300</td></tr>
+        <tr><td>Ведущий специалист по ОТ (зам. начальника)</td><td class="num">1</td><td class="num">150–190</td><td class="num">170</td><td class="num">170</td></tr>
+        <tr><td>Специалист по ОТ — куратор площадок</td><td class="num">2</td><td class="num">110–150</td><td class="num">130</td><td class="num">260</td></tr>
+        <tr><td>Специалист по ОТ — обучение, СИЗ, медосмотры</td><td class="num">1</td><td class="num">100–135</td><td class="num">120</td><td class="num">120</td></tr>
+        <tr><td>Ведущий инженер по пожарной безопасности</td><td class="num">1</td><td class="num">130–170</td><td class="num">155</td><td class="num">155</td></tr>
+        <tr><td>Инженер по пожарной безопасности</td><td class="num">1</td><td class="num">100–135</td><td class="num">120</td><td class="num">120</td></tr>
+        <tr><td>Ведущий специалист по ГО и ЧС</td><td class="num">1</td><td class="num">110–150</td><td class="num">130</td><td class="num">130</td></tr>
+        <tr><td>Ведущий инженер по промышленной безопасности</td><td class="num">1</td><td class="num">140–190</td><td class="num">165</td><td class="num">165</td></tr>
+        <tr><td>Ведущий инженер-эколог</td><td class="num">1</td><td class="num">130–175</td><td class="num">155</td><td class="num">155</td></tr>
+        <tr><td>Инженер-эколог</td><td class="num">1</td><td class="num">95–130</td><td class="num">115</td><td class="num">115</td></tr>
+      </tbody>
+      <tfoot>
+        <tr><td>Итого в месяц</td><td class="num">11</td><td></td><td></td><td class="num">1 690</td></tr>
+        <tr><td colspan="4">ФОТ в год</td><td class="num">20 280</td></tr>
+        <tr><td colspan="4">Страховые взносы (общий тариф: 30% до предельной базы, 15,1% сверх неё), ≈</td><td class="num">5 990</td></tr>
+        <tr><td colspan="4">Расходы на персонал отдела в год, ≈</td><td class="num">26 270</td></tr>
+      </tfoot>
+    </table>
+  </div>
+  <ul class="small">
+    <li>Минимальный вариант (9 ед.): ФОТ 1 440 тыс. ₽ в месяц, ≈ 22,4 млн ₽ в год со взносами.</li>
+    <li>Почему не ниже рынка: специалисты по промбезопасности и экологи с опытом на производстве — дефицитные позиции, вакансии ниже медианы закрываются 3–5 месяцев.</li>
+    <li>Кураторам площадок — разъездной характер работы в трудовом договоре и компенсация проезда или ГСМ (ст. 168.1 ТК РФ).</li>
+    <li>Ответственным на площадках (не штат отдела) — доплата за расширение зоны ответственности 5–10% оклада по ст. 60.2 ТК РФ.</li>
+    <li>Предложенные суммы нужно сверить с внутренней грейдовой сеткой компании до утверждения штатного расписания.</li>
+  </ul>
+</section>
+
+<!-- 6 -->
+<section>
+  <h2><span class="n">6</span>Обязанности по должностям</h2>
+  <div class="roles">
+    <div class="role c-head">
+      <header><h3>Начальник отдела ПБЭ</h3><span class="q">1 ед. · подчинение: главный инженер</span></header>
+      <ul>
+        <li>Организация работы по пяти направлениям, распределение площадок и задач.</li>
+        <li>Бюджет отдела: СИЗ, СОУТ, обучение, медосмотры, ТО систем ПБ, экоплатежи, экспертизы ПБ.</li>
+        <li>Взаимодействие с ГИТ, МЧС (ГПН), Ростехнадзором, Росприроднадзором, Роспотребнадзором, Департаментом природопользования Москвы.</li>
+        <li>Положение о СУОТ (приказ Минтруда № 776н), политика в области ОТ, ПБ и экологии, ежегодный план мероприятий.</li>
+        <li>Ежемесячный отчёт главному инженеру: травматизм, предписания, сроки устранения, затраты.</li>
+        <li>Право остановить работу при прямой угрозе жизни и здоровью с немедленным докладом главному инженеру.</li>
+      </ul>
+    </div>
+    <div class="role c-ot">
+      <header><h3>Ведущий специалист по ОТ (зам. начальника)</h3><span class="q">1 ед. · профстандарт № 274н</span></header>
+      <ul>
+        <li>Руководство группой ОТ, замещение начальника отдела.</li>
+        <li>Оценка профрисков, организация СОУТ (ФЗ № 426-ФЗ), реализация плана мероприятий по её итогам.</li>
+        <li>Расследование несчастных случаев (приказ Минтруда № 223н), отчётность в СФР, возврат 20% страховых взносов на мероприятия по ОТ.</li>
+        <li>Комитет (комиссия) по ОТ, работа с уполномоченными по ОТ.</li>
+        <li>Курирование головной площадки.</li>
+      </ul>
+    </div>
+    <div class="role c-ot">
+      <header><h3>Специалист по ОТ — куратор площадок</h3><span class="q">2 ед. · П1–П4 и П5–П7</span></header>
+      <ul>
+        <li>Плановые обходы закреплённых площадок не реже 1 раза в 2 недели, предписания, контроль устранения.</li>
+        <li>Контроль работ повышенной опасности: наряды-допуски, работы на высоте, в замкнутых пространствах, с ЛВЖ.</li>
+        <li>Контроль применения СИЗ, особенно органов дыхания на композитном и окрасочном участках.</li>
+        <li>Первичное реагирование при НС и микротравмах, учёт микроповреждений (приказ Минтруда № 223н).</li>
+        <li>Актуализация ИОТ по профессиям площадки.</li>
+      </ul>
+    </div>
+    <div class="role c-ot">
+      <header><h3>Специалист по ОТ — обучение, СИЗ, медосмотры</h3><span class="q">1 ед.</span></header>
+      <ul>
+        <li>Обучение по ОТ по Пост. № 2464: программы, график, протоколы, реестр обученных Минтруда.</li>
+        <li>Нормы выдачи СИЗ по приказу № 767н, заявки, контроль выдачи по Правилам № 766н.</li>
+        <li>Медосмотры (приказ № 29н), психиатрическое освидетельствование, списки контингентов, отстранение по ст. 76 ТК РФ.</li>
+        <li>Вводный инструктаж по ОТ для новых работников.</li>
+      </ul>
+    </div>
+    <div class="role c-pb">
+      <header><h3>Ведущий инженер по пожарной безопасности</h3><span class="q">1 ед. · руководитель группы ПБ и ГО и ЧС</span></header>
+      <ul>
+        <li>Система ПБ по 7 площадкам: приказы о противопожарном режиме, инструкции о мерах ПБ (п. 2 ППР), назначение ответственных.</li>
+        <li>Категорирование помещений и зданий по взрывопожарной и пожарной опасности (СП 12.13130).</li>
+        <li>Контроль подрядчиков по ТО систем АПС, СОУЭ, АУПТ (лицензия МЧС), огнезащитной обработки.</li>
+        <li>Обучение мерам ПБ по приказу МЧС № 806: инструктажи, ДПО для ответственных.</li>
+        <li>Сопровождение проверок ГПН МЧС, устранение предписаний.</li>
+      </ul>
+    </div>
+    <div class="role c-pb">
+      <header><h3>Инженер по пожарной безопасности</h3><span class="q">1 ед.</span></header>
+      <ul>
+        <li>Обходы площадок, контроль путей эвакуации, складирования, мест хранения ЛВЖ и ГЖ.</li>
+        <li>Учёт и перезарядка огнетушителей, ПК, журнал эксплуатации систем противопожарной защиты.</li>
+        <li>Практические тренировки по эвакуации, планы эвакуации.</li>
+        <li>Огневые работы: наряды-допуски, контроль мест проведения.</li>
+      </ul>
+    </div>
+    <div class="role c-pb">
+      <header><h3>Ведущий специалист по ГО и ЧС</h3><span class="q">1 ед. · работник, уполномоченный на решение задач ГО (Пост. № 782)</span></header>
+      <ul>
+        <li>План действий по предупреждению и ликвидации ЧС, план ГО (при отнесении организации к категории по ГО).</li>
+        <li>Организация работы КЧС и ОПБ организации, ведение документации.</li>
+        <li>Подготовка работников: вводный инструктаж по ГО, курсовое обучение (Пост. № 841 и № 1485), учения и тренировки.</li>
+        <li>Оповещение и связь, средства индивидуальной защиты на случай ЧС, взаимодействие с ГУ МЧС.</li>
+        <li>Замещение ведущего инженера по ПБ.</li>
+      </ul>
+    </div>
+    <div class="role c-prom">
+      <header><h3>Ведущий инженер по промышленной безопасности</h3><span class="q">1 ед. · ответственный за производственный контроль</span></header>
+      <ul>
+        <li>Идентификация ОПО, регистрация и актуализация сведений в госреестре, ОСОПО (ФЗ № 225-ФЗ).</li>
+        <li>Положение о производственном контроле и ежегодный отчёт в Ростехнадзор (Пост. № 2168).</li>
+        <li>Аттестация руководителей и специалистов по ПБ в Ростехнадзоре (Пост. № 1365), допуск рабочих профессий.</li>
+        <li>Подъёмные сооружения и оборудование под давлением: учёт, освидетельствования, экспертиза ПБ, назначение ответственных.</li>
+        <li>Кислородное оборудование лазерного комплекса: требования к эксплуатации, хранению баллонов, обучение персонала.</li>
+      </ul>
+    </div>
+    <div class="role c-eco">
+      <header><h3>Ведущий инженер-эколог</h3><span class="q">1 ед. · руководитель группы экологии</span></header>
+      <ul>
+        <li>Постановка объектов НВОС на учёт, определение категории, актуализация сведений.</li>
+        <li>Программа ПЭК и отчёт по ПЭК (приказ Минприроды № 109), инвентаризация выбросов.</li>
+        <li>Разрешительная документация: нормативы выбросов, санитарно-защитные зоны совместно с Роспотребнадзором.</li>
+        <li>Сопровождение проверок Росприроднадзора и Департамента природопользования Москвы.</li>
+      </ul>
+    </div>
+    <div class="role c-eco">
+      <header><h3>Инженер-эколог</h3><span class="q">1 ед.</span></header>
+      <ul>
+        <li>Статотчётность 2-ТП (воздух), 2-ТП (отходы), декларация о плате за НВОС, расчёт платы.</li>
+        <li>Учёт образования и движения отходов, паспорта отходов I–IV класса опасности.</li>
+        <li>Договоры с региональным оператором ТКО и лицензиатами, контроль мест накопления отходов.</li>
+        <li>Обучение на право работы с отходами I–IV класса (ст. 15 ФЗ № 89-ФЗ) для ответственных.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 7 -->
+<section>
+  <h2><span class="n">7</span>Границы ответственности</h2>
+  <p>Чтобы не было дублирования и «ничьих» зон, в положении об отделе фиксируется, что отдел <b>не ведёт</b>:</p>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Функция</th><th>Кто отвечает</th><th>Роль отдела ПБЭ</th></tr></thead>
+      <tbody>
+        <tr><td>Электрохозяйство, электробезопасность</td><td>Главный энергетик (ответственный за электрохозяйство)</td><td>Контроль при обходах, учёт в СУОТ</td></tr>
+        <tr><td>Ремонт и ТО технологического оборудования</td><td>Главный механик</td><td>Требования безопасности, приёмка после ремонта ПС и сосудов</td></tr>
+        <tr><td>Физическая охрана, антитеррористическая защищённость</td><td>Служба безопасности</td><td>Согласование планов эвакуации и оповещения</td></tr>
+        <tr><td>Пожаробезопасность материалов изделия (АП-25.853)</td><td>КБ, ОТК, сертификация</td><td>Не участвует</td></tr>
+        <tr><td>Мобилизационная подготовка, воинский учёт</td><td>Мобилизационный работник, отдел кадров</td><td>Не участвует</td></tr>
+        <tr><td>Кадровое оформление отстранений, переводов</td><td>Отдел кадров</td><td>Инициирует по основаниям ОТ</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- 8 -->
+<section>
+  <h2><span class="n">8</span>Риски переподчинения и как их закрыть</h2>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Риск</th><th>Мера</th></tr></thead>
+      <tbody>
+        <tr><td>Конфликт интересов: главный инженер отвечает за выпуск продукции и одновременно руководит контролем безопасности.</td><td>В положении об отделе — право прямого доклада генеральному директору при угрозе жизни и здоровью и при предписаниях надзорных органов.</td></tr>
+        <tr><td>Медосмотры, обучение, СИЗ завязаны на HR и бюджет директора по персоналу.</td><td>Регламент взаимодействия с HR: кто формирует списки, кто направляет, кто оплачивает. Бюджет СИЗ и медосмотров — отдельной строкой у отдела ПБЭ.</td></tr>
+        <tr><td>Принимаемые функции ПБ, ГО и ЧС, ПрБ сейчас ведутся с пробелами, документы разбросаны.</td><td>Приём дел по акту, gap-аудит по 7 площадкам в первые 3 месяца, план устранения с ответственными и сроками.</td></tr>
+        <tr><td>Долгое закрытие вакансий по промбезопасности и экологии.</td><td>Зарплата на уровне медианы рынка; на период поиска — договор с внешней организацией на аутсорсинг ПК и экоотчётности.</td></tr>
+        <tr><td>Изменение условий трудовых договоров действующих работников.</td><td>Если в трудовом договоре указано подразделение или подчинение — уведомление по ст. 74 ТК РФ не менее чем за 2 месяца или перевод с согласия по ст. 72.1 ТК РФ.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- 9 -->
+<section>
+  <h2><span class="n">9</span>План перехода</h2>
+  <ol class="steps">
+    <li><span class="when">Месяц 1</span><div>Приказ о реорганизации, изменения в штатное расписание, положение об отделе и должностные инструкции. Уведомление работников. Акт приёма документов по ПБ, ГО и ЧС, ПрБ от текущих ответственных.</div></li>
+    <li><span class="when">Месяц 1–3</span><div>Подбор на новые должности. До выхода сотрудников — временное возложение обязанностей приказом и, при необходимости, аутсорсинг производственного контроля ОПО.</div></li>
+    <li><span class="when">Месяц 2–3</span><div>Gap-аудит 7 площадок по всем пяти направлениям. Реестр несоответствий с оценкой штрафных рисков по КоАП.</div></li>
+    <li><span class="when">Месяц 3–4</span><div>Новые приказы о назначении ответственных на площадках, единый график обходов, единая форма предписаний и отчёта главному инженеру.</div></li>
+    <li><span class="when">Месяц 6</span><div>Первый полугодовой отчёт: устранённые несоответствия, травматизм, предписания, затраты по направлениям.</div></li>
+  </ol>
+</section>
+
+<!-- 10 -->
+<section class="ask">
+  <h2>Прошу согласовать</h2>
+  <ol>
+    <li>Создание отдела производственной безопасности и экологии в подчинении главного инженера численностью 11 штатных единиц по структуре раздела 3.</li>
+    <li>Уровень оплаты труда по разделу 5: ФОТ 1 690 тыс. ₽ в месяц, около 26,3 млн ₽ в год с учётом страховых взносов.</li>
+    <li>Подготовку проекта приказа о реорганизации и положения об отделе в срок до 30 ноября 2026 года.</li>
+  </ol>
+</section>
+
+<footer class="src">
+  <div><b>Нормативная база.</b> ТК РФ (ст. 60.2, 72.1, 74, 76, 168.1, 214–223); ФЗ № 426-ФЗ «О СОУТ»; приказы Минтруда № 776н (СУОТ), № 37 (рекомендации по численности службы ОТ), № 274н (профстандарт), № 223н (расследование НС), № 766н и № 767н (СИЗ); приказ Минздрава № 29н; Пост. Правительства РФ № 2464 (обучение по ОТ). ФЗ № 69-ФЗ, № 123-ФЗ; Пост. № 1479 (ППР в РФ); приказ МЧС № 806. ФЗ № 28-ФЗ, № 68-ФЗ; Пост. № 782, № 841, № 1485. ФЗ № 116-ФЗ, № 225-ФЗ; Пост. № 2168, № 1365; ФНП «Правила безопасности ОПО, на которых используются подъёмные сооружения», ФНП «Правила промышленной безопасности при использовании оборудования, работающего под избыточным давлением». ФЗ № 7-ФЗ, № 89-ФЗ, № 96-ФЗ; приказ Минприроды № 109.</div>
+  <div><b>Рынок оплаты труда.</b> Оценка по открытым вакансиям Москвы на hh.ru и обзорам 2026 года, например: <a href="https://hh.ru/vacancy/135912149" target="_blank" rel="noopener">ведущий специалист по ОТ</a>, <a href="https://hh.ru/vacancy/135954311" target="_blank" rel="noopener">специалист по ОТ и ПБ</a>, <a href="https://hh.ru/vacancy/135923921" target="_blank" rel="noopener">ведущий инженер-эколог</a>, <a href="https://checkroi.ru/blog/zarplata-ekologa/" target="_blank" rel="noopener">обзор зарплат экологов 2026</a>. Перед утверждением диапазоны сверяются с платным зарплатным обзором и грейдами компании.</div>
+</footer>
+
+</div>
